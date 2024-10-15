@@ -26,5 +26,6 @@ int main(int argc, char** argv)
 
     draw_image(img); 
     free_img(img);
+
     return 0;
 }

@@ -18,7 +18,8 @@ JPEG_HANDLER_t* create_jpeg_handler(char* filename)
         return NULL; 
 
     new_handler->cinfo.err = jpeg_std_error(&new_handler->jpeg_err_handler); 
-    new_handler->file_jpeg = jpeg_file; 
+    new_handler->file_jpeg = jpeg_file;
+    new_handler->pixel_scan_row = NULL;  
 
     // Initialize cinfo with a file, decompress and header init.
     jpeg_create_decompress(&(new_handler->cinfo)); 
@@ -42,15 +43,21 @@ JPEG_HANDLER_t* create_jpeg_handler(char* filename)
 void free_jpeg_handler(JPEG_HANDLER_t* handler)
 {
     if (!handler)
-        return; 
+    return; 
 
     jpeg_destroy_decompress(&(handler->cinfo));
    
     if (handler->pixel_scan_row)
+    {
         free(handler->pixel_scan_row);
+        handler->pixel_scan_row = NULL; 
+    }
 
     if (handler->file_jpeg)
+    { 
         fclose(handler->file_jpeg);
+        handler->file_jpeg = NULL; 
+    }
 
     free(handler); 
 }
