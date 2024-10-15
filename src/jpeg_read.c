@@ -1,30 +1,41 @@
 #include "jpeg_read.h"
 
 
-// * Read the JPEG header to fetch, width, height and channel number. 
-// * param: jpeg_file: the pointer to the file that we need information about. 
-// * param: height: pointer to where the height of the image will be stored. 
-// * param: width: pointer to where the width of the image will be stored. 
-// * param: channel_count: pointer to where the color channel count of the  
-// *                       image will be stored. 
-void read_header_jpeg(FILE* jpeg_file, size_t* height, size_t* width, size_t* channel_count)
+JPEG_HANDLER_t* create_jpeg_handler(char* filename)
 {
-    struct jpeg_decompress_struct jpeg; 
-    struct jpeg_error_mgr         jpeg_err_handler; 
+    FILE*           jpeg_file; 
+    JPEG_HANDLER_t* new_handler; 
 
-    // Link error manager strut to the JPEG decompress struct. 
-    jpeg.err = jpeg_std_error(&jpeg_err_handler); 
-    jpeg_create_decompress(&jpeg); 
+    jpeg_file = fopen(filename, "rb"); 
+    if (!jpeg_file)
+        return NULL; 
 
-    // Add the JPEG file to the JPEG decompress struct. 
-    jpeg_stdio_src(&jpeg, jpeg_file); 
-    jpeg_read_header(&jpeg, 1);
+    new_handler = malloc(sizeof(JPEG_HANDLER_t));
+    if (!new_handler)
+        return NULL; 
 
-    // Get every informations about the images needed. 
-    *width = jpeg.image_width;
-    *height = jpeg.image_height;
-    *channel_count = jpeg.num_components;
+    new_handler->cinfo.err = jpeg_std_error(&new_handler->jpeg_err_handler); 
 
-    // Free the memory. 
-    jpeg_destroy_decompress(&jpeg);
+    // Initialize cinfo with a file, decompress and header init.
+    jpeg_create_decompress(&(new_handler->cinfo)); 
+    jpeg_stdio_src(&(new_handler->cinfo), jpeg_file);
+    // fclose(jpeg_file); 
+
+    if (jpeg_read_header(&(new_handler->cinfo), 1) != JPEG_HEADER_OK) 
+    {
+        jpeg_destroy_decompress(&(new_handler->cinfo)); 
+        free(new_handler);
+        return NULL; 
+    }
+    
+    return new_handler; 
+}
+
+
+void free_jpeg_handler(JPEG_HANDLER_t* handler)
+{
+    if (!handler)
+        return; 
+
+    jpeg_destroy_decompress(&(handler->cinfo));
 }

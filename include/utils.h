@@ -5,6 +5,9 @@
 #include <stdlib.h>
 
 
+#define _DEBUG(str)    printf(str)
+
+
 // __ FUNCTIONS ________________________________________________________________
 // * Convert hex color to rgb color. 
 // * param: hex: the color in hex that will be converted to rgb. 

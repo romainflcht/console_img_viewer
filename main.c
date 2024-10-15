@@ -1,18 +1,19 @@
 #include <stdio.h>
+#include <ctype.h>
 
 #include "image.h"
 #include "jpeg_read.h"
 
-
 int main(void)
 {
-    IMG_t* img;
+    IMG_t *img;
 
-    img = create_img("img/img1.jpeg"); 
+    img = create_img("img/img(80x40).jpeg");
+
     if (!img)
-        return 1; 
+        return 1;
 
-    draw_image(img);
-    free_img(img); 
-    return 0; 
+    load_jpeg(img); 
+    draw_image(img); 
+    return 0;
 }

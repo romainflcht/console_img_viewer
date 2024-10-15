@@ -8,7 +8,7 @@ BUILD_DIR = build
 
 # COMPILER OPTIONS 
 CC          = gcc
-FLAGS       = -Wall -Wextra -Werror -I$(INCS_DIR)
+FLAGS       = -Wall -Wextra -Werror -g -I$(INCS_DIR)
 LINK        = -ljpeg 
 
 # COMPILATION
@@ -37,7 +37,7 @@ $(BUILD_DIR)/$(TARGET): $(OBJS)
 	@echo "\n$(RED)--SOURCES FILE FOUND : $(RST)$(BOLD)$(SOURCES)$(RST)"
 	@echo "$(YELLOW)--OBJECTS FILE FOUND : $(RST)$(BOLD)$(OBJS)$(RST)"
 	@echo "\n$(CYAN)~LINKING $(RST)$(BOLD)$<$(RST)$(CYAN) TO EXECUTABLE TARGET $(RST)$(BOLD)$@$(RST)"
-	@$(CC) -o $@ $^ $(FLAGS) $(LINK)
+	@$(CC) $^ -o $@ $(FLAGS) $(LINK)
 	@echo "$(GREEN)-> FINISHED!$(RST)"
 
 
