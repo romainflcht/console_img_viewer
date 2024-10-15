@@ -13,7 +13,7 @@ LINK        = -ljpeg
 
 # COMPILATION
 INCLUDES = $(wildcard $(INCS_DIR)/*.h)
-SOURCES  = main.c pixel.c image.c utils.c jpeg_read.c
+SOURCES  = main.c pixel.c image.c utils.c jpeg_handler.c args.c
 OBJS     = $(addprefix obj/,$(SOURCES:.c=.o))
 
 # FONT

@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <jpeglib.h>
-#include "jpeg_read.h"
+#include "jpeg_handler.h"
 #include "pixel.h"
 #include "utils.h"
 
@@ -25,15 +25,12 @@ typedef struct
 
 
 // __ FUNCTIONS ________________________________________________________________
-// * Create an IMG_t struct and initialise the image with BLACK pixels. 
-// * param: height: height of the image. 
-// * param: width: width of the image. 
+// * Create an IMG_t struct but doesn't initialize the PIXEL_t matrix. 
 // * return: the pointer to the IMG_t struct of NULL in case of errors. 
 IMG_t* create_img(char* filename); 
 
 // * Free the IMG_t structure correctly.
-// * param: img: the image that need to be freed. 
-// * return: 0 in case of success and 1 in case of an error. 
+// * param: img: the image that need to be freed.
 void free_img(IMG_t* img);
 
 // * Draw the IMG_t pixel matrix to the stdout. 
@@ -42,7 +39,6 @@ void draw_image(IMG_t *img);
 
 // * Load the jpeg img into the IMG_t data structure. 
 // * param: img: the IMG_t structure where JPEG data need to be inserted in. 
-// * param: file_path: the file path to the JPEG image. 
 // * return: 0 if no error occured and 1 otherwise. 
 int load_jpeg(IMG_t* img); 
 

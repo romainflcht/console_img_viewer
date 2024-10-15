@@ -1,19 +1,30 @@
 #include <stdio.h>
 #include <ctype.h>
 
+#include "args.h"
 #include "image.h"
-#include "jpeg_read.h"
+#include "jpeg_handler.h"
 
-int main(void)
+int main(int argc, char** argv)
 {
-    IMG_t *img;
+    IMG_t   *img;
+    char*   filename; 
+    int     retval;
 
-    img = create_img("img/img(80x40).jpeg");
+    filename = parse_arg(argc, argv); 
+    img = create_img(filename);
 
     if (!img)
         return 1;
 
-    load_jpeg(img); 
+    retval = load_jpeg(img);
+    if (retval)
+    {
+        free_img(img);
+        return 1; 
+    } 
+
     draw_image(img); 
+    free_img(img);
     return 0;
 }

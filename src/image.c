@@ -1,36 +1,52 @@
 #include "image.h"
 
+
+// * Create an IMG_t struct but doesn't initialize the PIXEL_t matrix. 
+// * return: the pointer to the IMG_t struct of NULL in case of errors. 
 IMG_t* create_img(char* filename)
 {
-    IMG_t* new_img; 
+    IMG_t*          new_img; 
     JPEG_HANDLER_t* handler; 
+    size_t          height; 
+    size_t          width; 
+    size_t          channel_count; 
 
     handler = create_jpeg_handler(filename); 
     if (!handler)
         return NULL; 
+
+    height = handler->cinfo.image_height; 
+    width = handler->cinfo.image_width; 
+    channel_count = handler->cinfo.num_components; 
     
+    // Allocate memory for the pixel row buffer to read the jpeg line by line. 
+    handler->pixel_scan_row = malloc(sizeof(unsigned char) * width * channel_count); 
+    if (!handler->pixel_scan_row)
+    {
+        free_jpeg_handler(handler); 
+        return NULL; 
+    }
+
     new_img = malloc(sizeof(IMG_t));
     if (!new_img)
-        // TODO: free the handler. 
+    {
+        free_jpeg_handler(handler); 
         return NULL; 
+    }
 
-    // Initialize new_img width, height and channel count. 
-    new_img->height = handler->cinfo.image_height; 
-    new_img->width = handler->cinfo.image_width; 
-    new_img->channel_count = handler->cinfo.num_components; 
-
-    // Allocate memory for the pixel row buffer to read the jpeg line by line. 
-    handler->pixel_scan_row = malloc(sizeof(unsigned char) * new_img->width * new_img->channel_count); 
-    if (!handler->pixel_scan_row)
-        // TODO: free the whole structure. 
-        return NULL; 
-
+    // Initialize new_img handler, width, height and channel count. 
     new_img->handler = handler; 
+    new_img->height = height; 
+    new_img->width = width; 
+    new_img->channel_count = channel_count; 
+
     new_img->img = malloc(sizeof(PIXEL_t) * new_img->width * (new_img->height / 2)); 
     
     if (!new_img->img)
-        // TODO: free the whole structure. 
+    {
+        free_img(new_img); 
         return NULL; 
+    }
 
     return new_img; 
 }
@@ -38,7 +54,6 @@ IMG_t* create_img(char* filename)
 
 // * Free the IMG_t structure correctly.
 // * param: img: the image that need to be freed. 
-// * return: 0 in case of success and 1 in case of an error. 
 void free_img(IMG_t* img)
 {
     if (!img)
@@ -47,26 +62,29 @@ void free_img(IMG_t* img)
     if (img->img)
         free(img->img); 
 
+    free_jpeg_handler(img->handler); 
     free(img); 
     return; 
 }
 
 
-
-
 // * Load the jpeg img into the IMG_t data structure. 
 // * param: img: the IMG_t structure where JPEG data need to be inserted in. 
-// * param: file_path: the file path to the JPEG image. 
 // * return: 0 if no error occured and 1 otherwise. 
 int load_jpeg(IMG_t* img)
-{ 
-    jpeg_start_decompress(&(img->handler->cinfo));
+{
+    int retval; 
+
+    if(!jpeg_start_decompress(&(img->handler->cinfo)))
+        return 1;
 
     while(img->handler->cinfo.output_scanline < img->handler->cinfo.image_height)
     {
         // Read one row of pixels of the image loaded in JPEG and stores it 
         // inside pixel_scan_row. 
-        jpeg_read_scanlines(&(img->handler->cinfo), &(img->handler->pixel_scan_row), 1); 
+        retval = jpeg_read_scanlines(&(img->handler->cinfo), &(img->handler->pixel_scan_row), 1); 
+        if (!retval)
+            return 1; 
 
         // Load the pixel row into the IMG_t struct. 
         load_pixelscan(img, img->handler->pixel_scan_row, img->handler->cinfo.output_scanline); 
@@ -91,15 +109,21 @@ void load_pixelscan(IMG_t* img, pixel_row_t* pixel_scanline, unsigned int line)
     unsigned short int  g; 
     unsigned short int  b; 
 
-    // TODO: Handling modifing pixel for image with other color channel 
-    // TODO: count than 3. 
     for (i = 0; i < img->width; i++)
     { 
-        r = pixel_scanline[i * 3]; 
-        g = pixel_scanline[i * 3 + 1]; 
-        b = pixel_scanline[i * 3 + 2]; 
-        rgb_to_hex(r, g, b, &hex); 
+        if (img->channel_count < 3)
+            // Only one channel mean grayscale image, r, g and b have the same 
+            // value. 
+            r = g = b =  pixel_scanline[i * 3];
 
+        else
+        {
+            r = pixel_scanline[i * img->channel_count + 0]; 
+            g = pixel_scanline[i * img->channel_count + 1]; 
+            b = pixel_scanline[i * img->channel_count + 2]; 
+        }
+
+        rgb_to_hex(r, g, b, &hex); 
         change_pixel_color((img->img + i + (line - 1) / 2 * img->width), hex, (line - 1) % 2); 
     }
 
@@ -126,5 +150,10 @@ void draw_image(IMG_t *img)
     }
 
     // finish the print with some information. 
-    printf("\x1b[1mIMG SIZE : %ldx%ld with %ld channel(s) color.\x1b[0m\n", img->width, img->height, img->channel_count); 
+    printf(
+        "\x1b[1mIMG SIZE : %ldx%ld with %ld channel(s) color.\x1b[0m\n", 
+        img->width, 
+        img->height, 
+        img->channel_count
+    ); 
 }
