@@ -19,12 +19,10 @@ IMG_t* create_img(char* filename)
     width = handler->cinfo.image_width; 
     channel_count = handler->cinfo.num_components; 
     
-    // TODO: Handle img with odd height. 
+    // If img has an odd height, add one to the overall height to allocate 
+    // enought memory. 
     if (height % 2 != 0)
-    {
-        free_jpeg_handler(handler);
-        return NULL; 
-    }
+        height++; 
 
     // Allocate memory for the pixel row buffer to read the jpeg line by line. 
     handler->pixel_scan_row = malloc(sizeof(unsigned char) * width * channel_count); 

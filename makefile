@@ -16,6 +16,9 @@ INCLUDES = $(wildcard $(INCS_DIR)/*.h)
 SOURCES  = main.c pixel.c image.c utils.c jpeg_handler.c args.c
 OBJS     = $(addprefix obj/,$(SOURCES:.c=.o))
 
+# RUN
+ARGS = 
+
 # FONT
 MAGENTA  = \e[35m
 CYAN     = \e[36m
@@ -53,7 +56,7 @@ $(OBJS_DIR)/$(TARGET).o: $(TARGET).c $(INCLUDES) | mkdir_obj
 
 run: all
 	@echo "$(CLEAR)$(CUR_HOME)\r"
-	@./$(BUILD_DIR)/$(TARGET)
+	@./$(BUILD_DIR)/$(TARGET) $(ARGS)
 
 
 mkdir_obj: 
