@@ -6,9 +6,9 @@ INCS_DIR  = include
 OBJS_DIR  = obj
 BUILD_DIR = build
 
-# COMPILER OPTIONS -Wall -Wextra -Werror 
+# COMPILER OPTIONS  
 CC          = gcc
-FLAGS       =  -g -I$(INCS_DIR)
+FLAGS       = -Wall -Wextra -Werror -g -I$(INCS_DIR)
 LINK        = -ljpeg 
 
 # COMPILATION

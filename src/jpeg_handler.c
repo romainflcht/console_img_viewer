@@ -43,7 +43,7 @@ JPEG_HANDLER_t* create_jpeg_handler(char* filename)
 void free_jpeg_handler(JPEG_HANDLER_t* handler)
 {
     if (!handler)
-    return; 
+        return; 
 
     jpeg_destroy_decompress(&(handler->cinfo));
    

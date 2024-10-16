@@ -166,7 +166,7 @@ void draw_image(IMG_t *img)
 
     // finish the print with some information. 
     printf(
-        "\x1b[1mIMG SIZE : %ldx%ld with %ld channel(s) color.\x1b[0m\n", 
+        "\x1b[1mIMG SIZE : %ldx%ld with %ld channel(s) color.\x1b[0m\n\n", 
         img->width, 
         img->height, 
         img->channel_count
