@@ -18,11 +18,6 @@ IMG_t* create_img(char* filename)
     height = handler->cinfo.image_height; 
     width = handler->cinfo.image_width; 
     channel_count = handler->cinfo.num_components; 
-    
-    // If img has an odd height, add one to the overall height to allocate 
-    // enought memory. 
-    if (height % 2 != 0)
-        height++; 
 
     // Allocate memory for the pixel row buffer to read the jpeg line by line. 
     handler->pixel_scan_row = malloc(sizeof(unsigned char) * width * channel_count); 
@@ -45,8 +40,14 @@ IMG_t* create_img(char* filename)
     new_img->width = width; 
     new_img->channel_count = channel_count; 
 
-    new_img->img = malloc(sizeof(PIXEL_t) * new_img->width * (new_img->height / 2)); 
+    // Allocate memory for the pixel matrix and add one pixel if the
+    // image height is odd.
+    if (height % 2)
+        new_img->img = malloc(sizeof(PIXEL_t) * new_img->width * ((new_img->height + 1) / 2)); 
     
+    else
+        new_img->img = malloc(sizeof(PIXEL_t) * new_img->width * (new_img->height / 2)); 
+
     if (!new_img->img)
     {
         free_img(new_img); 
@@ -90,6 +91,7 @@ int load_jpeg(IMG_t* img)
 
     if(!jpeg_start_decompress(&(img->handler->cinfo)))
         return 1;
+    
 
     while(img->handler->cinfo.output_scanline < img->handler->cinfo.image_height)
     {
@@ -151,7 +153,12 @@ void draw_image(IMG_t *img)
     size_t i; 
     size_t total_matrix_len; 
 
-    total_matrix_len = img->width * (img->height / 2);
+    if (img->height % 2)
+        total_matrix_len = img->width * ((img->height + 1) / 2);
+
+    else
+        total_matrix_len = img->width * (img->height / 2);
+
 
     for (i = 0; i < total_matrix_len; i++)
     { 

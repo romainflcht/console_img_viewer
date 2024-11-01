@@ -21,7 +21,7 @@ int main(int argc, char** argv)
     {
         img = create_img(files[i]);
         if (!img)
-            continue;  
+            continue; 
 
         retval = load_jpeg(img);
         if (retval)

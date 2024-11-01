@@ -11,7 +11,10 @@ JPEG_HANDLER_t* create_jpeg_handler(char* filename)
 
     jpeg_file = fopen(filename, "rb"); 
     if (!jpeg_file)
+    {
+        printf("File \"%s\" not found, please check your path.", filename); 
         return NULL; 
+    }
 
     new_handler = malloc(sizeof(JPEG_HANDLER_t));
     if (!new_handler)

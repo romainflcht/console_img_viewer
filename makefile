@@ -17,7 +17,7 @@ SOURCES  = main.c pixel.c image.c utils.c jpeg_handler.c args.c
 OBJS     = $(addprefix obj/,$(SOURCES:.c=.o))
 
 # RUN
-ARGS = 
+ARGS = "img/img(15x15).jpeg"
 
 # FONT
 MAGENTA  = \e[35m
