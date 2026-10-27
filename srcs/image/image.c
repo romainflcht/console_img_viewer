@@ -62,8 +62,9 @@ static void fit_image(size_t* width, size_t* height, const OPTIONS_t* options)
     size_t      max_height;
     size_t      new_width;
     size_t      new_height;
+    size_t      reserved; 
 
-    term_known = !get_display_terminal(options, &term); 
+    term_known = !get_display_terminal(options, &term);
     ppc = pixels_per_cell(options); 
 
     // A character cell holds ppc pixels vertically (2 with ▄, 1 in ASCII), 
@@ -95,7 +96,12 @@ static void fit_image(size_t* width, size_t* height, const OPTIONS_t* options)
         max_height = options->max_rows * ppc; 
 
     else if (term_known && (options->fit == FIT_BOTH || options->fit == FIT_HEIGHT))
-        max_height = term.rows > RESERVED_ROWS ? (term.rows - RESERVED_ROWS) * ppc : ppc; 
+    {
+        reserved = RESERVED_PROMPT_ROWS; 
+        reserved += options->quiet ? 0 : RESERVED_INFO_ROWS; 
+        reserved += options->title ? RESERVED_TITLE_ROWS : 0; 
+        max_height = term.rows > reserved ? (term.rows - reserved) * ppc : ppc; 
+    }
 
     if (!max_width && !max_height)
         return; 
@@ -312,6 +318,7 @@ IMG_t* create_img(char* filename, const OPTIONS_t* options)
     }
 
     new_img->options = options; 
+    new_img->name = strcmp(filename, STDIN_FILENAME) ? filename : STDIN_NAME; 
     decoder.name = strcmp(filename, STDIN_FILENAME) ? filename : STDIN_NAME; 
     decoder.data = data; 
     decoder.len = len; 
@@ -545,7 +552,17 @@ int draw_image(IMG_t *img)
     render.colors = img->options->colors; 
     interrupted = 0; 
 
-    // Center the image when asked and when the terminal width is known. 
+    // The file name before the image, in bold except in mono. 
+    if (img->options->title)
+    {
+        printf("%s==> %s <==%s\n", 
+            img->options->colors != COLORS_MONO ? ESC_BOLD : "", 
+            img->name, 
+            img->options->colors != COLORS_MONO ? ESC_RESET : ""
+        ); 
+    }
+
+    // Center the image when asked and when the terminal width is known.
     render.offset = 0; 
     if (img->options->center && !get_display_terminal(img->options, &term) && term.cols > img->width)
         render.offset = (term.cols - img->width) / 2; 
@@ -563,8 +580,14 @@ int draw_image(IMG_t *img)
     else if (draw_pixels(img->img, NULL, &render))
         return 0; 
 
-    // finish the print with some information (in bold, except without 
-    // colors where no escape sequence is written). 
+    if (img->options->quiet)
+    {
+        fflush(stdout); 
+        return interrupted; 
+    }
+
+    // finish the print with some information (in bold, except without
+    // colors where no escape sequence is written).
     if (img->options->colors != COLORS_MONO)
         printf(ESC_BOLD); 
 

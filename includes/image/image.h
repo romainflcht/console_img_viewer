@@ -21,8 +21,11 @@
 // __ DEFINIFIONS ______________________________________________________________
 #define BLACK 0x000000; 
 
-// Terminal rows kept free under the image (info line, blank line, prompt).
-#define RESERVED_ROWS 3
+// Terminal rows kept free around the image: the prompt, the information 
+// line and the blank line after it (unless -q), the title (with -t). 
+#define RESERVED_PROMPT_ROWS 1
+#define RESERVED_INFO_ROWS   2
+#define RESERVED_TITLE_ROWS  1
 
 
 // __ TYPES DEFINITIONS ________________________________________________________
@@ -54,6 +57,7 @@ typedef struct
     int     orientation;        // EXIF orientation [1-8]. 
     size_t  frame_capacity; 
     const OPTIONS_t*    options; 
+    const char*         name;   // file name, for the title. 
     PIXEL_t *img;// frame_count pixel matrices, one after the other. 
     int*    delays;     // display time of each frame in milliseconds. 
 } IMG_t;
