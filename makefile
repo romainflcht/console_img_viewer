@@ -14,7 +14,7 @@ CC          = gcc
 CFLAGS      = -Wall -Wextra -Werror -g
 CPPFLAGS    = -I$(INCS_DIR)
 LDFLAGS     =
-LDLIBS      = -ljpeg -lpng
+LDLIBS      = -ljpeg -lpng -lgif
 
 # COMPILATION
 INCLUDES = $(shell find $(INCS_DIR) -name '*.h')

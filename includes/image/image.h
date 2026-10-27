@@ -2,11 +2,15 @@
 #define _IMAGE_H_
 
 #include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 #include "decoders/jpeg_handler.h"
 #include "decoders/png_handler.h"
+#include "decoders/gif_handler.h"
 #include "display/terminal.h"
 #include "display/pixel.h"
 #include "display/renderer.h"
+#include "display/animation.h"
 #include "utils/utils.h"
 
 // __ DEFINIFIONS ______________________________________________________________
@@ -23,7 +27,8 @@ typedef enum
 {
     FORMAT_UNKNOWN,
     FORMAT_JPEG,
-    FORMAT_PNG
+    FORMAT_PNG,
+    FORMAT_GIF
 } IMG_FORMAT_t;
 
 typedef struct
@@ -33,13 +38,16 @@ typedef struct
     size_t  src_height;
     size_t  src_width;
     size_t  channel_count; 
-    PIXEL_t *img; 
+    size_t  frame_count; 
+    size_t  frame_capacity; 
+    PIXEL_t *img;       // frame_count pixel matrices, one after the other. 
+    int*    delays;     // display time of each frame in milliseconds. 
 } IMG_t;
 
 
 // __ FUNCTIONS ________________________________________________________________
-// * Create an IMG_t struct from a JPEG or PNG file, resized to fit inside the
-// * current terminal.
+// * Create an IMG_t struct from a JPEG, PNG or GIF file, resized to fit inside 
+// * the current terminal. Animated images keep all their frames.
 // * param: filename: path to the image.
 // * return: the pointer to the IMG_t struct of NULL in case of errors. 
 IMG_t* create_img(char* filename); 
@@ -48,9 +56,12 @@ IMG_t* create_img(char* filename);
 // * param: img: the image that need to be freed.
 void free_img(IMG_t* img);
 
-// * Draw the IMG_t pixel matrix to the stdout. 
+// * Draw the IMG_t pixel matrix to the stdout, animated images are played 
+// * when the output is a terminal. 
 // * param: img: image that will be drawn to the screen. 
-void draw_image(IMG_t *img); 
+// * param: loop: 1 to play animations until Ctrl-C, 0 to play them once. 
+// * return: 1 if the user pressed Ctrl-C during an animation, 0 otherwise. 
+int draw_image(IMG_t *img, int loop); 
 
 // * Detect the format of an image file by reading its signature.
 // * param: filename: path to the image.
@@ -67,11 +78,12 @@ IMG_FORMAT_t get_img_format(char* filename);
 // *         errors.
 unsigned char* resize_rgb(unsigned char* src, size_t src_width, size_t src_height, size_t dst_width, size_t dst_height);
 
-// * Load a pixel row scan into the correct pixel row of the IMG_t struct. 
+// * Load a pixel row scan into the correct pixel row of a frame. 
 // * param: img: the img where the pixel row need to be inserted. 
+// * param: frame: the pixel matrix of the frame. 
 // * param: pixel_row_t: the RGB pixel row that need to be inserted
 // *                     (unsigned char ptr). 
 // * param: line: the row where the pixel row need to be inserted. 
-void load_pixelscan(IMG_t* img, pixel_row_t* pixel_scanline, unsigned int line);
+void load_pixelscan(IMG_t* img, PIXEL_t* frame, pixel_row_t* pixel_scanline, unsigned int line);
 
 #endif
