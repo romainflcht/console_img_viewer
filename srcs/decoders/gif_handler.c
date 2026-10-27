@@ -27,6 +27,27 @@ static const char* gif_error(int error)
 }
 
 
+// * giflib input function: copy the next bytes of the GIF in memory. 
+// * param: gif: the GIF file, its UserData is the GIF_READER_t. 
+// * param: buffer: where the bytes are copied. 
+// * param: len: the number of bytes asked. 
+// * return: the number of bytes copied. 
+static int read_gif_data(GifFileType* gif, GifByteType* buffer, int len)
+{
+    GIF_READER_t*   reader; 
+    size_t          available; 
+
+    reader = gif->UserData; 
+    available = reader->len - reader->pos; 
+    if ((size_t)len > available)
+        len = available; 
+
+    memcpy(buffer, reader->data + reader->pos, len); 
+    reader->pos += len; 
+    return len; 
+}
+
+
 // * Fill a rectangle of the canvas with black.
 // * param: canvas: the RGB canvas.
 // * param: canvas_width: width of the canvas.
@@ -80,12 +101,11 @@ static void draw_frame(GifFileType* gif, SavedImage* frame, unsigned char* canva
 // * Decode every frame of a GIF image. Each frame is composed over the
 // * previous ones (following its disposal mode) and given to the callback.
 // * Transparent pixels are black.
-// * param: filename: path to the GIF image.
-// * param: callback: function called with each decoded frame.
-// * param: user: pointer given to the callback.
-// * return: 0 if at least one frame was decoded and 1 otherwise.
-int decode_gif(char* filename, FRAME_CALLBACK_t callback, void* user)
+// * param: decoder: the encoded image and the frame callback. 
+// * return: 0 if at least one frame was decoded and 1 otherwise. 
+int decode_gif(DECODER_t* decoder)
 {
+    GIF_READER_t            reader; 
     GifFileType*            gif;
     GraphicsControlBlock    gcb;
     SavedImage*             frame;
@@ -98,17 +118,21 @@ int decode_gif(char* filename, FRAME_CALLBACK_t callback, void* user)
     int                     i;
     int                     retval;
 
-    gif = DGifOpenFileName(filename, &error);
+    reader.data = decoder->data; 
+    reader.len = decoder->len; 
+    reader.pos = 0; 
+
+    gif = DGifOpen(&reader, read_gif_data, &error);
     if (!gif)
     {
-        print_error(filename, "unable to read GIF: %s", gif_error(error));
+        print_error(decoder->name, "unable to read GIF: %s", gif_error(error));
         return 1;
     }
 
     // A truncated GIF still keeps the frames decoded before the error.
     if (DGifSlurp(gif) != GIF_OK && gif->ImageCount == 0)
     {
-        print_error(filename, "unable to decode GIF: %s", gif_error(gif->Error));
+        print_error(decoder->name, "unable to decode GIF: %s", gif_error(gif->Error));
         DGifCloseFile(gif, &error);
         return 1;
     }
@@ -155,7 +179,7 @@ int decode_gif(char* filename, FRAME_CALLBACK_t callback, void* user)
         if (delay_ms < GIF_MIN_DELAY_MS)
             delay_ms = GIF_DEFAULT_DELAY_MS;
 
-        if (callback(canvas, gif->SWidth, gif->SHeight, 3, delay_ms, user))
+        if (decoder->on_frame(canvas, gif->SWidth, gif->SHeight, 3, delay_ms, decoder->user))
         {
             retval = 1;
             break;

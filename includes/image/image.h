@@ -14,11 +14,9 @@
 #include "display/renderer.h"
 #include "display/animation.h"
 #include "utils/utils.h"
+#include "utils/file.h"
 
 // __ DEFINIFIONS ______________________________________________________________
-// Number of bytes read to detect the image format (longest signature). 
-#define IMG_SIGNATURE_LEN WEBP_SIGNATURE_LEN
-
 #define BLACK 0x000000; 
 
 // Terminal rows kept free under the image (info line, blank line, prompt).
@@ -54,7 +52,7 @@ typedef struct
 // __ FUNCTIONS ________________________________________________________________
 // * Create an IMG_t struct from a JPEG, PNG, GIF or WebP file, resized to 
 // * fit inside the current terminal. Animated images keep all their frames.
-// * param: filename: path to the image.
+// * param: filename: path to the image, or "-" for the standard input. 
 // * return: the pointer to the IMG_t struct of NULL in case of errors. 
 IMG_t* create_img(char* filename); 
 
@@ -69,10 +67,11 @@ void free_img(IMG_t* img);
 // * return: 1 if the user pressed Ctrl-C during an animation, 0 otherwise. 
 int draw_image(IMG_t *img, int loop); 
 
-// * Detect the format of an image file by reading its signature.
-// * param: filename: path to the image.
-// * return: the format of the image or FORMAT_UNKNOWN.
-IMG_FORMAT_t get_img_format(char* filename);
+// * Detect the format of an image from its signature. 
+// * param: data: the content of the file. 
+// * param: len: the size of the data. 
+// * return: the format of the image or FORMAT_UNKNOWN. 
+IMG_FORMAT_t get_img_format(const unsigned char* data, size_t len); 
 
 // * Resize a RGB buffer using area averaging.
 // * param: src: the RGB buffer to resize.

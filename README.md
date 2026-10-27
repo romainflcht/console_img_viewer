@@ -38,6 +38,8 @@ After that, you can run the script by using the command:
 | `-h`, `--help` | Show the help. |
 | `-V`, `--version` | Show the version. |
 
+`FILE` can be `-` to read the image from the standard input, for example `ssh board cat /tmp/capture.png | tv -`. Pipes and devices can be read too.
+
 `Ctrl-C` during an animation stops the program. When the output is redirected to a file, only the first frame of an animation is written.
 
 Errors are written on `stderr` as `tv: <file>: <message>`. The exit code is `0` when every file was displayed, `1` when at least one file could not be displayed and `130` when the program was stopped with `Ctrl-C`.
@@ -54,7 +56,7 @@ srcs/               sources, main.c is at the root
 ├── decoders/       one decoder per image format (JPEG, PNG, GIF, WebP) and EXIF parsing
 ├── display/        terminal size, rendering and animation playback
 ├── image/          image creation, resizing, rotation and drawing
-└── utils/          color conversion helpers
+└── utils/          color conversion, error and file reading helpers
 includes/           headers, same layout as srcs/
 bin/                compiled executable (tv)
 ```

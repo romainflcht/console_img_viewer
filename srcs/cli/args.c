@@ -9,6 +9,7 @@ static void print_usage(FILE* stream)
         stream, 
         "Usage: " PROGRAM_NAME " [OPTION]... FILE...\n"
         "Display JPEG, PNG, GIF and WebP images in the terminal.\n"
+        "With FILE -, read the standard input.\n"
         "\n"
         "Animation:\n"
         "  -l, --loop        loop animations until Ctrl-C (played once by default)\n"

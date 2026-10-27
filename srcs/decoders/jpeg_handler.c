@@ -14,155 +14,153 @@ int is_jpeg(const unsigned char* header, size_t len)
 }
 
 
-// * Replace libjpeg default error_exit: save the error message and jump back 
-// * to the last setjmp() instead of exiting the program. 
-// * param: cinfo: the libjpeg structure that raised the error. 
+// * Replace libjpeg default error_exit: save the error message and jump back
+// * to the last setjmp() instead of exiting the program.
+// * param: cinfo: the libjpeg structure that raised the error.
 static void jpeg_error_exit(j_common_ptr cinfo)
 {
-    JPEG_ERROR_t* err; 
+    JPEG_ERROR_t* err;
 
-    err = (JPEG_ERROR_t*)cinfo->err; 
-    (*cinfo->err->format_message)(cinfo, err->message); 
-    longjmp(err->jump_buffer, 1); 
+    err = (JPEG_ERROR_t*)cinfo->err;
+    (*cinfo->err->format_message)(cinfo, err->message);
+    longjmp(err->jump_buffer, 1);
 }
 
 
-// * Create a JPEG_HANDLER_t structure. 
-// * param: filename: path to the the JPEG image. 
-// * return: the newly created JPEG handler or NULL in case of errors.  
-JPEG_HANDLER_t* create_jpeg_handler(char* filename)
+// * Replace libjpeg default output_message: print the warnings (corrupted 
+// * data...) like the other errors of the program. 
+// * param: cinfo: the libjpeg structure that raised the warning. 
+static void jpeg_output_message(j_common_ptr cinfo)
 {
-    FILE*           jpeg_file; 
-    JPEG_HANDLER_t* new_handler; 
+    JPEG_ERROR_t*   err; 
+    char            message[JMSG_LENGTH_MAX]; 
 
-    jpeg_file = fopen(filename, "rb"); 
-    if (!jpeg_file)
-    {
-        print_error(filename, "%s", strerror(errno));
-        return NULL; 
-    }
+    err = (JPEG_ERROR_t*)cinfo->err; 
+    (*cinfo->err->format_message)(cinfo, message); 
+    print_error(err->name, "warning: %s", message); 
+}
+
+
+// * Create a JPEG_HANDLER_t structure and read the JPEG header.
+// * param: decoder: the encoded image.
+// * return: the newly created JPEG handler or NULL in case of errors.
+JPEG_HANDLER_t* create_jpeg_handler(DECODER_t* decoder)
+{
+    JPEG_HANDLER_t* new_handler;
 
     new_handler = malloc(sizeof(JPEG_HANDLER_t));
     if (!new_handler)
-    {
-        fclose(jpeg_file);
-        return NULL; 
-    }
+        return NULL;
 
-    new_handler->cinfo.err = jpeg_std_error(&new_handler->jpeg_err_handler.pub); 
+    new_handler->cinfo.err = jpeg_std_error(&new_handler->jpeg_err_handler.pub);
     new_handler->jpeg_err_handler.pub.error_exit = jpeg_error_exit; 
-    new_handler->file_jpeg = jpeg_file;
+    new_handler->jpeg_err_handler.pub.output_message = jpeg_output_message; 
+    new_handler->jpeg_err_handler.name = decoder->name; 
 
-    // Initialize cinfo with a file, decompress and header init.
-    jpeg_create_decompress(&(new_handler->cinfo)); 
-    jpeg_stdio_src(&(new_handler->cinfo), new_handler->file_jpeg);
+    // Initialize cinfo with the data in memory, decompress and header init.
+    jpeg_create_decompress(&(new_handler->cinfo));
+    jpeg_mem_src(&(new_handler->cinfo), decoder->data, decoder->len);
 
-    // Keep the APP1 markers in memory to read the EXIF orientation. 
-    jpeg_save_markers(&(new_handler->cinfo), JPEG_APP0 + 1, 0xFFFF); 
+    // Keep the APP1 markers in memory to read the EXIF orientation.
+    jpeg_save_markers(&(new_handler->cinfo), JPEG_APP0 + 1, 0xFFFF);
 
-    // libjpeg jumps back here if the header is corrupted. 
+    // libjpeg jumps back here if the header is corrupted.
     if (setjmp(new_handler->jpeg_err_handler.jump_buffer))
     {
-        print_error(filename, "unable to read JPEG: %s", new_handler->jpeg_err_handler.message);
-        free_jpeg_handler(new_handler); 
-        return NULL; 
+        print_error(decoder->name, "unable to read JPEG: %s", new_handler->jpeg_err_handler.message);
+        free_jpeg_handler(new_handler);
+        return NULL;
     }
 
-    // Check if the JPEG file is in the correct format. 
-    if (jpeg_read_header(&(new_handler->cinfo), 1) != JPEG_HEADER_OK) 
+    // Check if the JPEG file is in the correct format.
+    if (jpeg_read_header(&(new_handler->cinfo), 1) != JPEG_HEADER_OK)
     {
-        free_jpeg_handler(new_handler); 
-        return NULL; 
+        free_jpeg_handler(new_handler);
+        return NULL;
     }
 
-    return new_handler; 
+    return new_handler;
 }
 
 
 // * Free the JPEG_HANDLER_t structure correctly.
-// * param: handler: the JPEG handler that need to be freed. 
+// * param: handler: the JPEG handler that need to be freed.
 void free_jpeg_handler(JPEG_HANDLER_t* handler)
 {
     if (!handler)
-        return; 
+        return;
 
     jpeg_destroy_decompress(&(handler->cinfo));
-
-    if (handler->file_jpeg)
-    {
-        fclose(handler->file_jpeg);
-        handler->file_jpeg = NULL; 
-    }
-
-    free(handler); 
+    free(handler);
 }
 
 
-// * Read the EXIF orientation of a JPEG image (APP1 marker). 
-// * param: handler: the JPEG handler, its header must already be read. 
-// * return: the orientation [1-8], ORIENTATION_NORMAL if there is none. 
+// * Read the EXIF orientation of a JPEG image (APP1 marker).
+// * param: handler: the JPEG handler, its header must already be read.
+// * return: the orientation [1-8], ORIENTATION_NORMAL if there is none.
 int get_jpeg_orientation(JPEG_HANDLER_t* handler)
 {
-    jpeg_saved_marker_ptr marker; 
+    jpeg_saved_marker_ptr marker;
 
     for (marker = handler->cinfo.marker_list; marker; marker = marker->next)
     {
         if (marker->marker != JPEG_APP0 + 1)
-            continue; 
+            continue;
 
         if (marker->data_length < EXIF_HEADER_LEN || memcmp(marker->data, EXIF_HEADER, EXIF_HEADER_LEN))
-            continue; 
+            continue;
 
-        return exif_get_orientation(marker->data, marker->data_length); 
+        return exif_get_orientation(marker->data, marker->data_length);
     }
 
-    return ORIENTATION_NORMAL; 
+    return ORIENTATION_NORMAL;
 }
 
 
-// * Decode a JPEG image into a RGB buffer (3 bytes per pixel) rotated 
-// * following its EXIF orientation.
-// * param: filename: path to the JPEG image.
-// * param: width: where the image width will be stored.
-// * param: height: where the image height will be stored.
-// * param: channel_count: where the original channel count will be stored.
-// * return: the RGB buffer (that need to be freed) or NULL in case of errors.
-unsigned char* decode_jpeg(char* filename, size_t* width, size_t* height, size_t* channel_count)
+// * Decode a JPEG image rotated following its EXIF orientation and give it
+// * to the decoder callback.
+// * param: decoder: the encoded image and the frame callback.
+// * return: 0 if no error occured and 1 otherwise.
+int decode_jpeg(DECODER_t* decoder)
 {
     JPEG_HANDLER_t* handler;
     unsigned char*  buffer;
     unsigned char*  row;
+    size_t          width;
+    size_t          height;
+    size_t          channel_count;
     size_t          row_len;
-    int             orientation; 
+    int             orientation;
+    int             retval;
 
-    handler = create_jpeg_handler(filename);
+    handler = create_jpeg_handler(decoder);
     if (!handler)
-        return NULL; 
+        return 1;
 
-    *width = handler->cinfo.image_width;
-    *height = handler->cinfo.image_height;
-    *channel_count = handler->cinfo.num_components;
-    orientation = get_jpeg_orientation(handler); 
+    width = handler->cinfo.image_width;
+    height = handler->cinfo.image_height;
+    channel_count = handler->cinfo.num_components;
+    orientation = get_jpeg_orientation(handler);
 
     // Ask libjpeg to convert grayscale images to RGB.
     handler->cinfo.out_color_space = JCS_RGB;
 
-    row_len = *width * 3;
-    buffer = malloc(sizeof(unsigned char) * row_len * *height);
+    row_len = width * 3;
+    buffer = malloc(sizeof(unsigned char) * row_len * height);
     if (!buffer)
     {
         free_jpeg_handler(handler);
-        return NULL; 
+        return 1;
     }
 
-    // libjpeg jumps back here if the image data is corrupted or if the color 
-    // space can't be converted to RGB. 
+    // libjpeg jumps back here if the image data is corrupted or if the color
+    // space can't be converted to RGB.
     if (setjmp(handler->jpeg_err_handler.jump_buffer))
     {
-        print_error(filename, "unable to decode JPEG: %s", handler->jpeg_err_handler.message);
+        print_error(decoder->name, "unable to decode JPEG: %s", handler->jpeg_err_handler.message);
         free(buffer);
         free_jpeg_handler(handler);
-        return NULL; 
+        return 1;
     }
 
     jpeg_start_decompress(&(handler->cinfo));
@@ -178,7 +176,13 @@ unsigned char* decode_jpeg(char* filename, size_t* width, size_t* height, size_t
     jpeg_finish_decompress(&(handler->cinfo));
     free_jpeg_handler(handler);
 
-    // Photos taken with a rotated camera need to be turned to be displayed 
-    // the right way up. 
-    return apply_orientation(buffer, width, height, orientation);
+    // Photos taken with a rotated camera need to be turned to be displayed
+    // the right way up.
+    buffer = apply_orientation(buffer, &width, &height, orientation);
+    if (!buffer)
+        return 1;
+
+    retval = decoder->on_frame(buffer, width, height, channel_count, 0, decoder->user);
+    free(buffer);
+    return retval;
 }
