@@ -16,6 +16,9 @@
 #define ARGS_ERROR  1
 #define ARGS_EXIT   2
 
+// Values of the long options without a short option. 
+#define OPT_FIT     256
+
 
 // __ TYPES DEFINITIONS ________________________________________________________
 typedef struct
