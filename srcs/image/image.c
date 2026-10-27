@@ -262,19 +262,8 @@ void load_pixelscan(IMG_t* img, pixel_row_t* pixel_scanline, unsigned int line)
 // * param: img: image that will be drawn to the screen. 
 void draw_image(IMG_t *img)
 {
-    size_t i; 
-    size_t total_matrix_len; 
-
-    total_matrix_len = img->width * ((img->height + 1) / 2);
-
-    for (i = 0; i < total_matrix_len; i++)
-    {
-        draw_pixel((img->img + i)); 
-
-        // Go to the next line if we reach the end of the pixel row. 
-        if (i % img->width == img->width - 1)
-            printf("\n"); 
-    }
+    if (draw_pixels(img->img, img->width, (img->height + 1) / 2))
+        return; 
 
     // finish the print with some information. 
     if (img->width != img->src_width || img->height != img->src_height)
