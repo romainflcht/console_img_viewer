@@ -57,6 +57,9 @@ JPEG_HANDLER_t* create_jpeg_handler(char* filename)
     jpeg_create_decompress(&(new_handler->cinfo)); 
     jpeg_stdio_src(&(new_handler->cinfo), new_handler->file_jpeg);
 
+    // Keep the APP1 markers in memory to read the EXIF orientation. 
+    jpeg_save_markers(&(new_handler->cinfo), JPEG_APP0 + 1, 0xFFFF); 
+
     // libjpeg jumps back here if the header is corrupted. 
     if (setjmp(new_handler->jpeg_err_handler.jump_buffer))
     {
@@ -95,7 +98,30 @@ void free_jpeg_handler(JPEG_HANDLER_t* handler)
 }
 
 
-// * Decode a JPEG image into a RGB buffer (3 bytes per pixel).
+// * Read the EXIF orientation of a JPEG image (APP1 marker). 
+// * param: handler: the JPEG handler, its header must already be read. 
+// * return: the orientation [1-8], ORIENTATION_NORMAL if there is none. 
+int get_jpeg_orientation(JPEG_HANDLER_t* handler)
+{
+    jpeg_saved_marker_ptr marker; 
+
+    for (marker = handler->cinfo.marker_list; marker; marker = marker->next)
+    {
+        if (marker->marker != JPEG_APP0 + 1)
+            continue; 
+
+        if (marker->data_length < EXIF_HEADER_LEN || memcmp(marker->data, EXIF_HEADER, EXIF_HEADER_LEN))
+            continue; 
+
+        return exif_get_orientation(marker->data, marker->data_length); 
+    }
+
+    return ORIENTATION_NORMAL; 
+}
+
+
+// * Decode a JPEG image into a RGB buffer (3 bytes per pixel) rotated 
+// * following its EXIF orientation.
 // * param: filename: path to the JPEG image.
 // * param: width: where the image width will be stored.
 // * param: height: where the image height will be stored.
@@ -107,6 +133,7 @@ unsigned char* decode_jpeg(char* filename, size_t* width, size_t* height, size_t
     unsigned char*  buffer;
     unsigned char*  row;
     size_t          row_len;
+    int             orientation; 
 
     handler = create_jpeg_handler(filename);
     if (!handler)
@@ -115,6 +142,7 @@ unsigned char* decode_jpeg(char* filename, size_t* width, size_t* height, size_t
     *width = handler->cinfo.image_width;
     *height = handler->cinfo.image_height;
     *channel_count = handler->cinfo.num_components;
+    orientation = get_jpeg_orientation(handler); 
 
     // Ask libjpeg to convert grayscale images to RGB.
     handler->cinfo.out_color_space = JCS_RGB;
@@ -149,5 +177,8 @@ unsigned char* decode_jpeg(char* filename, size_t* width, size_t* height, size_t
     // Free the decompression.
     jpeg_finish_decompress(&(handler->cinfo));
     free_jpeg_handler(handler);
-    return buffer;
+
+    // Photos taken with a rotated camera need to be turned to be displayed 
+    // the right way up. 
+    return apply_orientation(buffer, width, height, orientation);
 }

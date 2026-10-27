@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <setjmp.h>
 #include <jpeglib.h>
+#include "decoders/exif.h"
+#include "image/transform.h"
 
 
 // __ DEFINIFIONS ______________________________________________________________
@@ -43,7 +45,13 @@ JPEG_HANDLER_t* create_jpeg_handler(char* filename);
 // * param: handler: the JPEG handler that need to be freed. 
 void free_jpeg_handler(JPEG_HANDLER_t* handler);
 
-// * Decode a JPEG image into a RGB buffer (3 bytes per pixel).
+// * Read the EXIF orientation of a JPEG image (APP1 marker). 
+// * param: handler: the JPEG handler, its header must already be read. 
+// * return: the orientation [1-8], ORIENTATION_NORMAL if there is none. 
+int get_jpeg_orientation(JPEG_HANDLER_t* handler); 
+
+// * Decode a JPEG image into a RGB buffer (3 bytes per pixel) rotated 
+// * following its EXIF orientation.
 // * param: filename: path to the JPEG image.
 // * param: width: where the image width will be stored.
 // * param: height: where the image height will be stored.
