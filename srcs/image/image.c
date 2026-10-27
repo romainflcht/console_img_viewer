@@ -1,7 +1,29 @@
 #include "image/image.h"
 
 
-// * Get the terminal size, forced with -s or detected. 
+// * Number of pixels drawn in one character cell vertically: 2 with the half 
+// * blocks, 1 in ASCII. 
+// * param: options: the display options. 
+// * return: the number of pixels per cell. 
+static size_t pixels_per_cell(const OPTIONS_t* options)
+{
+    return options->charset == CHARSET_ASCII ? 1 : 2; 
+}
+
+
+// * Number of rows of character cells needed to draw the image. 
+// * param: img: the image. 
+// * return: the number of rows. 
+static size_t cell_rows(IMG_t* img)
+{
+    size_t ppc; 
+
+    ppc = pixels_per_cell(img->options); 
+    return (img->height + ppc - 1) / ppc; 
+}
+
+
+// * Get the terminal size, forced with -s or detected.
 // * param: options: the display options. 
 // * param: term: where the terminal size will be stored. 
 // * return: 0 if the size is known and 1 otherwise. 
@@ -33,21 +55,31 @@ static void fit_image(size_t* width, size_t* height, const OPTIONS_t* options)
 {
     TERMINAL_t  term; 
     int         term_known; 
+    size_t      ppc; 
+    size_t      cell_width; 
+    size_t      cell_height; 
     size_t      max_width;
     size_t      max_height;
     size_t      new_width;
     size_t      new_height;
 
     term_known = !get_display_terminal(options, &term); 
+    ppc = pixels_per_cell(options); 
 
-    // Each character cell holds 2 pixels vertically (▄), so a pixel is 
-    // cell_width wide and cell_height / 2 high. When the font size is known, 
-    // scale the height so the pixels displayed have the right proportions. 
+    // A character cell holds ppc pixels vertically (2 with ▄, 1 in ASCII), 
+    // so a pixel is cell_width wide and cell_height / ppc high. Scale the 
+    // height so the pixels displayed have the right proportions, cells are 
+    // assumed twice as high as wide when the font size is unknown. 
+    cell_width = 1; 
+    cell_height = 2; 
     if (term_known && term.cell_width && term.cell_height)
     {
-        new_height = (*height * 2 * term.cell_width + term.cell_height / 2) / term.cell_height; 
-        *height = new_height ? new_height : 1; 
+        cell_width = term.cell_width; 
+        cell_height = term.cell_height; 
     }
+
+    new_height = (*height * ppc * cell_width + cell_height / 2) / cell_height; 
+    *height = new_height ? new_height : 1; 
 
     // 0 means no limit on this dimension. 
     max_width = 0; 
@@ -60,10 +92,10 @@ static void fit_image(size_t* width, size_t* height, const OPTIONS_t* options)
         max_width = term.cols; 
 
     if (options->max_rows)
-        max_height = options->max_rows * 2; 
+        max_height = options->max_rows * ppc; 
 
     else if (term_known && (options->fit == FIT_BOTH || options->fit == FIT_HEIGHT))
-        max_height = term.rows > RESERVED_ROWS ? (term.rows - RESERVED_ROWS) * 2 : 2; 
+        max_height = term.rows > RESERVED_ROWS ? (term.rows - RESERVED_ROWS) * ppc : ppc; 
 
     if (!max_width && !max_height)
         return; 
@@ -105,8 +137,8 @@ static int grow_frames(IMG_t* img)
     if (img->frame_count < img->frame_capacity)
         return 0; 
 
-    capacity = img->frame_capacity ? img->frame_capacity * 2 : 1; 
-    cell_count = img->width * ((img->height + 1) / 2); 
+    capacity = img->frame_capacity ? img->frame_capacity * 2 : 1;
+    cell_count = img->width * cell_rows(img); 
 
     frames = realloc(img->img, sizeof(PIXEL_t) * cell_count * capacity); 
     if (!frames)
@@ -196,7 +228,7 @@ static int add_frame(unsigned char* rgb, size_t width, size_t height, size_t cha
     }
 
     // The missing bottom row stays black if the image height is odd. 
-    cell_count = img->width * ((img->height + 1) / 2); 
+    cell_count = img->width * cell_rows(img); 
     frame = img->img + img->frame_count * cell_count; 
     memset(frame, 0, sizeof(PIXEL_t) * cell_count); 
 
@@ -214,8 +246,22 @@ static int add_frame(unsigned char* rgb, size_t width, size_t height, size_t cha
         return 1; 
     }
 
-    for (line = 0; line < img->height; line++)
-        load_pixelscan(img, frame, codes + line * img->width, line + 1); 
+    // In ASCII each cell is one pixel: its color and its brightness (which 
+    // chooses the character). 
+    if (img->options->charset == CHARSET_ASCII)
+    {
+        for (line = 0; line < img->width * img->height; line++)
+        {
+            frame[line].f_color = codes[line]; 
+            frame[line].b_color = (299 * rgb[line * 3] + 587 * rgb[line * 3 + 1] + 114 * rgb[line * 3 + 2]) / 1000; 
+        }
+    }
+
+    else
+    {
+        for (line = 0; line < img->height; line++)
+            load_pixelscan(img, frame, codes + line * img->width, line + 1); 
+    }
 
     free(codes); 
 
@@ -427,7 +473,8 @@ int draw_image(IMG_t *img)
     int         interrupted; 
 
     render.width = img->width; 
-    render.rows = (img->height + 1) / 2; 
+    render.rows = cell_rows(img); 
+    render.ascii = img->options->charset == CHARSET_ASCII; 
     render.colors = img->options->colors; 
     interrupted = 0; 
 

@@ -3,6 +3,9 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
+#include <locale.h>
+#include <langinfo.h>
 #include "options.h"
 #include "utils/utils.h"
 
@@ -28,7 +31,12 @@
 // * return: the detected color mode. 
 COLOR_MODE_t detect_color_mode(void); 
 
-// * Convert a RGB frame to the color codes of the color mode: 0xRRGGBB for 
+// * Choose the characters from the locale: half blocks when it uses UTF-8, 
+// * ASCII otherwise (consoles without UTF-8 can't draw ▄). 
+// * return: CHARSET_UTF8 or CHARSET_ASCII. 
+CHARSET_t detect_charset(void); 
+
+// * Convert a RGB frame to the color codes of the color mode:0xRRGGBB for 
 // * truecolor, a palette index for 256/16/8 colors and 0 (black) or 1 
 // * (white) for mono. 
 // * param: rgb: the RGB frame (3 bytes per pixel). 

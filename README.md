@@ -42,6 +42,8 @@ After that, you can run the script by using the command:
 | `-C`, `--center` | Center the image horizontally. |
 | `-c`, `--colors=MODE` | `truecolor`, `256`, `16`, `8` or `mono` (no color, only blocks). `auto` (default) uses `NO_COLOR`, `TERM` and `COLORTERM`. |
 | `--dither=MODE` | How colors are approximated: `auto` (default: `fs` for images, `ordered` for animations), `fs` (Floyd-Steinberg), `ordered` or `none`. |
+| `-a`, `--ascii` | Draw with ASCII characters (one per pixel, chosen by brightness). Used automatically when the locale is not UTF-8. |
+| `--utf8` | Draw with half blocks even if the locale is not UTF-8. |
 | `-l`, `--loop` |Loop animations until `Ctrl-C` (they are played once by default). |
 | `-h`, `--help` | Show the help. |
 | `-V`, `--version` | Show the version. |
@@ -57,6 +59,8 @@ Each color change costs bytes, which matters on a serial link (115200 bauds is a
 | `COLORTERM=truecolor` or `24bit` | `truecolor` |
 | `TERM` containing `256color` | `256` |
 | anything else (`vt220`, `linux`...) | `16` |
+
+Consoles without UTF-8 can't draw the half blocks: when the locale is not UTF-8 (`LANG` unset, `C` or `POSIX`, common on embedded systems), the image is drawn with ASCII characters (` .:-=+*#%@`), one per pixel and colored unless in `mono`. `-a` forces it, `--utf8` disables it.
 
 An 80x40 photo takes about 49KB in truecolor, 15KB in 16 colors and 4KB in mono. Dithering keeps the image readable with few colors; animations use an ordered dithering which stays stable between frames (Floyd-Steinberg would change most cells at each frame). `--dither=none` gives the smallest output.
 

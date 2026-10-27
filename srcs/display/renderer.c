@@ -137,7 +137,32 @@ static void append_cell(OUTPUT_BUFFER_t* out, PIXEL_t* pixel, int* f_color, int*
 }
 
 
-// * Draw a pixel matrix to the stdout with a single write. Color escape 
+// * Append one ASCII cell: a character chosen by the brightness of the pixel 
+// * (b_color), with the pixel color (f_color) as foreground color, except in 
+// * mono. 
+// * param: out: the output buffer. 
+// * param: pixel: the cell to append. 
+// * param: f_color: the current foreground color, -1 if unknown. 
+// * param: mode: the color mode. 
+static void append_ascii_cell(OUTPUT_BUFFER_t* out, PIXEL_t* pixel, int* f_color, COLOR_MODE_t mode)
+{
+    static const char   ramp[] = ASCII_RAMP; 
+    int                 level; 
+
+    if (mode != COLORS_MONO && pixel->f_color != *f_color)
+    {
+        append_str(out, "\x1b["); 
+        append_color(out, pixel->f_color, 0, mode); 
+        out->data[out->len++] = 'm'; 
+        *f_color = pixel->f_color; 
+    }
+
+    level = pixel->b_color * (int)(sizeof(ramp) - 2) / 255; 
+    out->data[out->len++] = ramp[level]; 
+}
+
+
+// * Draw a pixel matrix to the stdout with a single write.Color escape 
 // * sequences are only sent when the color changes from the previous cell. 
 // * param: pixels: the pixel matrix (width * rows cells). 
 // * param: previous: the pixel matrix drawn just before, right above the 
@@ -215,7 +240,11 @@ int draw_pixels(PIXEL_t* pixels, PIXEL_t* previous, const RENDER_t* render)
                 skipped = 0; 
             }
 
-            append_cell(&out, pixel, &f_color, &b_color, render->colors); 
+            if (render->ascii)
+                append_ascii_cell(&out, pixel, &f_color, render->colors); 
+
+            else
+                append_cell(&out, pixel, &f_color, &b_color, render->colors); 
         }
 
         // Reset the colors only if some were written (never in mono). 

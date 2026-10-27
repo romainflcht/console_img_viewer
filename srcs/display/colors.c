@@ -51,7 +51,24 @@ COLOR_MODE_t detect_color_mode(void)
 }
 
 
-// * Squared distance between two colors, weighted for the human eye. 
+// * Choose the characters from the locale: half blocks when it uses UTF-8, 
+// * ASCII otherwise (consoles without UTF-8 can't draw ▄). 
+// * return: CHARSET_UTF8 or CHARSET_ASCII. 
+CHARSET_t detect_charset(void)
+{
+    const char* codeset; 
+
+    setlocale(LC_CTYPE, ""); 
+    codeset = nl_langinfo(CODESET); 
+
+    if (codeset && (!strcasecmp(codeset, "UTF-8") || !strcasecmp(codeset, "utf8")))
+        return CHARSET_UTF8; 
+
+    return CHARSET_ASCII; 
+}
+
+
+// * Squared distance between two colors, weighted for the human eye.
 // * param: r1, g1, b1: the first color. 
 // * param: r2, g2, b2: the second color. 
 // * return: the distance. 

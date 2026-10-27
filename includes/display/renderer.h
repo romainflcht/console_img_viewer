@@ -19,6 +19,9 @@
 // Worst case size of the escape sequences added around a frame. 
 #define FRAME_EXTRA_LEN 32 
 
+// ASCII characters from the darkest to the brightest. 
+#define ASCII_RAMP      " .:-=+*#%@"
+
 #define ESC_RESET       "\x1b[0m"
 #define ESC_BOLD        "\x1b[1m"
 #define ESC_SYNC_BEGIN  "\x1b[?2026h"
@@ -39,6 +42,7 @@ typedef struct
     size_t          rows;       // number of rows of cells. 
     size_t          offset;     // empty columns before the image (centering). 
     COLOR_MODE_t    colors;     // how the pixel colors are written. 
+    int             ascii;      // one character per pixel, by brightness. 
 } RENDER_t;
 
 

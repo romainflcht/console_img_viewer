@@ -28,6 +28,12 @@ static void print_usage(FILE* stream)
         "                        for images, ordered for animations), fs, ordered\n"
         "                        or none\n"
         "\n"
+        "Characters:\n"
+        "  -a, --ascii           draw with ASCII characters (one per pixel, chosen\n"
+        "                        by brightness), used when the locale is not UTF-8\n"
+        "      --utf8            draw with half blocks even if the locale is not\n"
+        "                        UTF-8\n"
+        "\n"
         "Animation:\n"
         "  -l, --loop            loop animations until Ctrl-C (played once by default)\n"
         "\n"
@@ -124,6 +130,8 @@ int parse_arg(int argc, char** argv, ARGS_t* args)
         {"center",  no_argument,       NULL, 'C'}, 
         {"colors",  required_argument, NULL, 'c'}, 
         {"dither",  required_argument, NULL, OPT_DITHER}, 
+        {"ascii",   no_argument,       NULL, 'a'}, 
+        {"utf8",    no_argument,       NULL, OPT_UTF8}, 
         {"loop",    no_argument,       NULL, 'l'}, 
         {"help",    no_argument,       NULL, 'h'}, 
         {"version", no_argument,       NULL, 'V'}, 
@@ -137,7 +145,7 @@ int parse_arg(int argc, char** argv, ARGS_t* args)
 
     memset(&args->options, 0, sizeof(OPTIONS_t)); 
 
-    while ((opt = getopt_long(argc, argv, "s:w:H:uCc:lhV", long_options, NULL)) != -1)
+    while ((opt = getopt_long(argc, argv, "s:w:H:uCc:alhV", long_options, NULL)) != -1)
     {
         switch (opt)
         {
@@ -200,6 +208,14 @@ int parse_arg(int argc, char** argv, ARGS_t* args)
                 args->options.dither = index; 
                 break; 
 
+            case 'a':
+                args->options.charset = CHARSET_ASCII; 
+                break; 
+
+            case OPT_UTF8:
+                args->options.charset = CHARSET_UTF8; 
+                break; 
+
             case 'l':
                 args->options.loop = 1;
                 break; 
@@ -224,7 +240,10 @@ int parse_arg(int argc, char** argv, ARGS_t* args)
 
     // The color mode is detected from the environment when not given. 
     if (args->options.colors == COLORS_AUTO)
-        args->options.colors = detect_color_mode(); 
+        args->options.colors = detect_color_mode();
+
+    if (args->options.charset == CHARSET_AUTO)
+        args->options.charset = detect_charset(); 
 
     if (args->file_count < 1)
     {
