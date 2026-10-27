@@ -26,7 +26,7 @@ int main(int argc, char** argv)
     exit_code = EXIT_OK; 
     for (int i = 0; i < args.file_count; i++)
     {
-        img = create_img(args.files[i]);
+        img = create_img(args.files[i], &args.options);
         if (!img)
         {
             exit_code = EXIT_FILE_ERROR; 
@@ -34,7 +34,7 @@ int main(int argc, char** argv)
         }
 
         // Ctrl-C during an animation stops the program. 
-        retval = draw_image(img, args.loop); 
+        retval = draw_image(img); 
         free_img(img);
         img = NULL; 
 

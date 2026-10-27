@@ -7,7 +7,8 @@
 // * wide so the image is not stretched. 
 // * param: width: the image width, replaced by the fitted width.
 // * param: height: the image height, replaced by the fitted height.
-static void fit_to_terminal(size_t* width, size_t* height)
+// * param: options: the display options (forced terminal size). 
+static void fit_to_terminal(size_t* width, size_t* height, const OPTIONS_t* options)
 {
     TERMINAL_t term; 
     size_t max_width;
@@ -15,7 +16,16 @@ static void fit_to_terminal(size_t* width, size_t* height)
     size_t new_width;
     size_t new_height;
 
-    if (get_terminal_size(&term))
+    // A size given with -s wins over the detected one. 
+    if (options->term_cols)
+    {
+        term.cols = options->term_cols; 
+        term.rows = options->term_rows; 
+        term.cell_width = 0; 
+        term.cell_height = 0; 
+    }
+
+    else if (get_terminal_size(&term))
         return; 
 
     // Each character cell holds 2 pixels vertically (▄), so a pixel is 
@@ -101,7 +111,7 @@ static void set_size(size_t width, size_t height, size_t channel_count, size_t* 
     img->channel_count = channel_count; 
     img->width = width; 
     img->height = height; 
-    fit_to_terminal(&img->width, &img->height); 
+    fit_to_terminal(&img->width, &img->height, img->options); 
     img->size_known = 1; 
 
     *target_width = img->width; 
@@ -170,8 +180,9 @@ static int add_frame(unsigned char* rgb, size_t width, size_t height, size_t cha
 // * Create an IMG_t struct from a JPEG, PNG, GIF or WebP file, resized to 
 // * fit inside the current terminal. Animated images keep all their frames. 
 // * param: filename: path to the image, or "-" for the standard input. 
+// * param: options: the display options. 
 // * return: the pointer to the IMG_t struct of NULL in case of errors. 
-IMG_t* create_img(char* filename)
+IMG_t* create_img(char* filename, const OPTIONS_t* options)
 {
     IMG_t*          new_img; 
     DECODER_t       decoder; 
@@ -190,6 +201,7 @@ IMG_t* create_img(char* filename)
         return NULL; 
     }
 
+    new_img->options = options; 
     decoder.name = strcmp(filename, STDIN_FILENAME) ? filename : STDIN_NAME; 
     decoder.data = data; 
     decoder.len = len; 
@@ -370,9 +382,8 @@ void load_pixelscan(IMG_t* img, PIXEL_t* frame, pixel_row_t* pixel_scanline, uns
 // * Draw the IMG_t pixel matrix to the stdout, animated images are played 
 // * when the output is a terminal. 
 // * param: img: image that will be drawn to the screen. 
-// * param: loop: 1 to play animations until Ctrl-C, 0 to play them once. 
 // * return: 1 if the user pressed Ctrl-C during an animation, 0 otherwise. 
-int draw_image(IMG_t *img, int loop)
+int draw_image(IMG_t *img)
 {
     size_t  rows; 
     int     interrupted; 
@@ -383,7 +394,7 @@ int draw_image(IMG_t *img, int loop)
     // Animations can't be played when the output is redirected, only the 
     // first frame is written. 
     if (img->frame_count > 1 && isatty(STDOUT_FILENO))
-        interrupted = play_animation(img->img, img->delays, img->frame_count, img->width, rows, loop); 
+        interrupted = play_animation(img->img, img->delays, img->frame_count, img->width, rows, img->options->loop); 
 
     else if (draw_pixels(img->img, NULL, img->width, rows))
         return 0; 
