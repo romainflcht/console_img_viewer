@@ -1,20 +1,25 @@
-TARGET = main
+TARGET = tv
 
 # DIRECTORIES OPTIONS
-SRCS_DIR  = src
-INCS_DIR  = include
+SRCS_DIR  = srcs
+INCS_DIR  = includes
 OBJS_DIR  = obj
-BUILD_DIR = build
+BIN_DIR   = bin
 
-# COMPILER OPTIONS  
+# INSTALL OPTIONS
+PREFIX    = /usr/local
+
+# COMPILER OPTIONS
 CC          = gcc
-FLAGS       = -Wall -Wextra -Werror -g -I$(INCS_DIR)
-LINK        = -ljpeg -lpng 
+CFLAGS      = -Wall -Wextra -Werror -g
+CPPFLAGS    = -I$(INCS_DIR)
+LDFLAGS     =
+LDLIBS      = -ljpeg -lpng
 
 # COMPILATION
-INCLUDES = $(wildcard $(INCS_DIR)/*.h)
-SOURCES  = main.c pixel.c image.c utils.c jpeg_handler.c png_handler.c terminal.c args.c
-OBJS     = $(addprefix obj/,$(SOURCES:.c=.o))
+INCLUDES = $(shell find $(INCS_DIR) -name '*.h')
+SOURCES  = $(shell find $(SRCS_DIR) -name '*.c')
+OBJS     = $(SOURCES:$(SRCS_DIR)/%.c=$(OBJS_DIR)/%.o)
 
 # RUN
 ARGS = "img/img(15x15).jpeg"
@@ -33,41 +38,43 @@ CLEAR    = \e[2J
 CUR_HOME = \e[H
 
 
-all: $(BUILD_DIR)/$(TARGET)
+all: $(BIN_DIR)/$(TARGET)
 
 
-$(BUILD_DIR)/$(TARGET): $(OBJS)
-	@echo "\n$(RED)--SOURCES FILE FOUND : $(RST)$(BOLD)$(SOURCES)$(RST)"
-	@echo "$(YELLOW)--OBJECTS FILE FOUND : $(RST)$(BOLD)$(OBJS)$(RST)"
-	@echo "\n$(CYAN)~LINKING $(RST)$(BOLD)$<$(RST)$(CYAN) TO EXECUTABLE TARGET $(RST)$(BOLD)$@$(RST)"
-	@$(CC) $^ -o $@ $(FLAGS) $(LINK)
-	@echo "$(GREEN)-> FINISHED!$(RST)"
+$(BIN_DIR)/$(TARGET): $(OBJS)
+	@printf "\n$(RED)--SOURCES FILE FOUND : $(RST)$(BOLD)$(SOURCES)$(RST)\n"
+	@printf "$(YELLOW)--OBJECTS FILE FOUND : $(RST)$(BOLD)$(OBJS)$(RST)\n"
+	@printf "\n$(CYAN)~LINKING $(RST)$(BOLD)$(OBJS_DIR)$(RST)$(CYAN) TO EXECUTABLE TARGET $(RST)$(BOLD)$@$(RST)\n"
+	@mkdir -p $(BIN_DIR)
+	@$(CC) $^ -o $@ $(CFLAGS) $(LDFLAGS) $(LDLIBS)
+	@printf "$(GREEN)-> FINISHED!$(RST)\n"
 
 
-$(OBJS_DIR)/%.o: $(SRCS_DIR)/%.c $(INCLUDES) | mkdir_obj
-	@echo "$(MAGENTA)~COMPILING $(RST)$(BOLD)$<$(RST)$(MAGENTA) TO $(RST)$(BOLD)$@$(RST)"
-	@$(CC) -c $< -o $@ $(FLAGS)
-
-
-$(OBJS_DIR)/$(TARGET).o: $(TARGET).c $(INCLUDES) | mkdir_obj
-	@echo "$(MAGENTA)~COMPILING $(WHITE)$(BOLD)$<$(RST)$(MAGENTA) TO $(RST)$(BOLD)$@$(RST)"
-	@$(CC) -c $< -o $@ $(FLAGS)
+$(OBJS_DIR)/%.o: $(SRCS_DIR)/%.c $(INCLUDES)
+	@printf "$(MAGENTA)~COMPILING $(RST)$(BOLD)$<$(RST)$(MAGENTA) TO $(RST)$(BOLD)$@$(RST)\n"
+	@mkdir -p $(dir $@)
+	@$(CC) -c $< -o $@ $(CFLAGS) $(CPPFLAGS)
 
 
 run: all
-	@echo "$(CLEAR)$(CUR_HOME)\r"
-	@./$(BUILD_DIR)/$(TARGET) $(ARGS)
+	@printf "$(CLEAR)$(CUR_HOME)\r"
+	@./$(BIN_DIR)/$(TARGET) $(ARGS)
 
 
-mkdir_obj: 
-	@mkdir -p $(OBJS_DIR)
+install: all
+	@install -Dm755 $(BIN_DIR)/$(TARGET) $(DESTDIR)$(PREFIX)/bin/$(TARGET)
+	@printf "$(GREEN)-> INSTALLED TO $(RST)$(BOLD)$(DESTDIR)$(PREFIX)/bin/$(TARGET)$(RST)\n"
+
+
+uninstall:
+	@rm -f $(DESTDIR)$(PREFIX)/bin/$(TARGET)
 
 
 clean:
-	@echo "$(CLEAR)$(CUR_HOME)$(RED)$(BOLD)~CLEANING DIRECTORY... $(RST)"
+	@printf "$(CLEAR)$(CUR_HOME)$(RED)$(BOLD)~CLEANING DIRECTORY... $(RST)\n"
 	@rm -rf $(OBJS_DIR)
-	@rm -rf $(BUILD_DIR)/$(TARGET)
-	@echo "$(GREEN)-> FINISHED!$(RST)"
+	@rm -rf $(BIN_DIR)
+	@printf "$(GREEN)-> FINISHED!$(RST)\n"
 
 
-.PHONY: all clean run mkdir_obj
+.PHONY: all clean run install uninstall

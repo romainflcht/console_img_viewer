@@ -2,11 +2,11 @@
 #define _IMAGE_H_
 
 #include <stdio.h>
-#include "jpeg_handler.h"
-#include "png_handler.h"
-#include "terminal.h"
-#include "pixel.h"
-#include "utils.h"
+#include "decoders/jpeg_handler.h"
+#include "decoders/png_handler.h"
+#include "display/terminal.h"
+#include "display/pixel.h"
+#include "utils/utils.h"
 
 // __ DEFINIFIONS ______________________________________________________________
 #define BLACK 0x000000; 

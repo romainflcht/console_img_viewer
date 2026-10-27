@@ -1,4 +1,4 @@
-#include "pixel.h"
+#include "display/pixel.h"
 
 
 // * Create a PIXEL_t struct and initialise the colors.
