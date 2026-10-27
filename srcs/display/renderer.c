@@ -117,8 +117,9 @@ static void append_cell(OUTPUT_BUFFER_t* out, PIXEL_t* pixel, int* f_color, int*
 // *        only the cells that changed are drawn again. 
 // * param: width: number of cells per row. 
 // * param: rows: number of rows of cells. 
+// * param: offset: number of empty columns before the image (centering). 
 // * return: 0 if no error occured and 1 otherwise. 
-int draw_pixels(PIXEL_t* pixels, PIXEL_t* previous, size_t width, size_t rows)
+int draw_pixels(PIXEL_t* pixels, PIXEL_t* previous, size_t width, size_t rows, size_t offset)
 {
     OUTPUT_BUFFER_t out; 
     PIXEL_t*        pixel; 
@@ -128,7 +129,7 @@ int draw_pixels(PIXEL_t* pixels, PIXEL_t* previous, size_t width, size_t rows)
     int             b_color; 
 
     out.len = 0; 
-    out.data = malloc(rows * (width * CELL_MAX_LEN + ROW_END_MAX_LEN) + FRAME_EXTRA_LEN); 
+    out.data = malloc(rows * (offset + width * CELL_MAX_LEN + ROW_END_MAX_LEN) + FRAME_EXTRA_LEN); 
     if (!out.data)
         return 1; 
 
@@ -148,6 +149,17 @@ int draw_pixels(PIXEL_t* pixels, PIXEL_t* previous, size_t width, size_t rows)
         f_color = -1; 
         b_color = -1; 
         skipped = 0; 
+
+        // The offset is written with spaces the first time, then skipped 
+        // with a cursor move like the cells that didn't change. 
+        if (previous)
+            skipped = offset; 
+
+        else
+        {
+            memset(out.data + out.len, ' ', offset); 
+            out.len += offset; 
+        }
 
         for (x = 0; x < width; x++)
         {

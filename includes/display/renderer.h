@@ -39,8 +39,9 @@ typedef struct
 // *        cursor, or NULL. When given, the cursor goes back to its top and
 // *        only the cells that changed are drawn again.
 // * param: width: number of cells per row.
-// * param: rows: number of rows of cells.
-// * return: 0 if no error occured and 1 otherwise.
-int draw_pixels(PIXEL_t* pixels, PIXEL_t* previous, size_t width, size_t rows);
+// * param: rows: number of rows of cells. 
+// * param: offset: number of empty columns before the image (centering). 
+// * return: 0 if no error occured and 1 otherwise. 
+int draw_pixels(PIXEL_t* pixels, PIXEL_t* previous, size_t width, size_t rows, size_t offset); 
 
 #endif

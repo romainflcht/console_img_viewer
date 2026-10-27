@@ -21,8 +21,9 @@
 // * param: frame_count: number of frames.
 // * param: width: number of cells per row.
 // * param: rows: number of rows of cells.
-// * param: loop: 1 to play the animation until Ctrl-C, 0 to play it once.
-// * return: 1 if the animation was stopped with Ctrl-C and 0 otherwise.
-int play_animation(PIXEL_t* frames, int* delays, size_t frame_count, size_t width, size_t rows, int loop);
+// * param: offset: number of empty columns before the image (centering). 
+// * param: loop: 1 to play the animation until Ctrl-C, 0 to play it once. 
+// * return: 1 if the animation was stopped with Ctrl-C and 0 otherwise. 
+int play_animation(PIXEL_t* frames, int* delays, size_t frame_count, size_t width, size_t rows, size_t offset, int loop); 
 
 #endif

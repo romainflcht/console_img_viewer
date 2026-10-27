@@ -50,9 +50,10 @@ static int timespec_after(struct timespec* a, struct timespec* b)
 // * param: frame_count: number of frames.
 // * param: width: number of cells per row.
 // * param: rows: number of rows of cells.
-// * param: loop: 1 to play the animation until Ctrl-C, 0 to play it once.
-// * return: 1 if the animation was stopped with Ctrl-C and 0 otherwise.
-int play_animation(PIXEL_t* frames, int* delays, size_t frame_count, size_t width, size_t rows, int loop)
+// * param: offset: number of empty columns before the image (centering). 
+// * param: loop: 1 to play the animation until Ctrl-C, 0 to play it once. 
+// * return: 1 if the animation was stopped with Ctrl-C and 0 otherwise. 
+int play_animation(PIXEL_t* frames, int* delays, size_t frame_count, size_t width, size_t rows, size_t offset, int loop)
 {
     struct sigaction    action;
     struct sigaction    old_action;
@@ -105,7 +106,7 @@ int play_animation(PIXEL_t* frames, int* delays, size_t frame_count, size_t widt
             // Ctrl-C is delayed while a frame is written so the frame is
             // never cut and the cursor always ends under the image.
             sigprocmask(SIG_BLOCK, &sigint_set, NULL);
-            error = draw_pixels(frame, previous, width, rows);
+            error = draw_pixels(frame, previous, width, rows, offset); 
             sigprocmask(SIG_UNBLOCK, &sigint_set, NULL);
             if (error)
                 break;
