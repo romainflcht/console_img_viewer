@@ -6,6 +6,7 @@
 #include "decoders/png_handler.h"
 #include "display/terminal.h"
 #include "display/pixel.h"
+#include "display/renderer.h"
 #include "utils/utils.h"
 
 // __ DEFINIFIONS ______________________________________________________________

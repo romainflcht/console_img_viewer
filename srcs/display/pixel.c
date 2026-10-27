@@ -19,23 +19,6 @@ PIXEL_t* create_pixel(int f_color, int b_color)
 }
 
 
-// * Draw the pixel to the stdout. 
-// * param: pixel: the pixel that will be drawn to the stdout. 
-void draw_pixel(PIXEL_t *pixel)
-{
-    int f_r, f_g, f_b; 
-    int b_r, b_g, b_b; 
-
-    hex_to_rgb(pixel->f_color, &f_r, &f_g, &f_b); 
-    hex_to_rgb(pixel->b_color, &b_r, &b_g, &b_b); 
-    
-    printf("\x1b[38;2;%d;%d;%dm", f_r, f_g, f_b); 
-    printf("\x1b[48;2;%d;%d;%dm", b_r, b_g, b_b);
-    printf(PIXEL_CHAR);
-    printf("\x1b[0m"); 
-    return; 
-}
-
 // * Change the color of a pixel. 
 // * param: pixel: the pixel that need to be modified. 
 // * param: hex_color: the new color of the pixel. 

@@ -26,10 +26,6 @@ typedef struct
 // * return: a pointer to the newly created pixel and NULL in case of errors. 
 PIXEL_t* create_pixel(int f_color, int b_color);
 
-// * Draw the pixel to the stdout. 
-// * param: pixel: the pixel that will be drawn to the stdout. 
-void draw_pixel(PIXEL_t *pixel); 
-
 // * Change the color of a pixel. 
 // * param: pixel: the pixel that need to be modified. 
 // * param: hex_color: the new color of the pixel. 
