@@ -8,6 +8,8 @@ BIN_DIR   = bin
 
 # INSTALL OPTIONS
 PREFIX    = /usr/local
+MAN_DIR   = man
+COMP_DIR  = completions
 
 # OPTIONAL DECODERS (make WITH_JPEG=0 ...), BMP and netpbm are always built
 WITH_JPEG ?= 1
@@ -115,11 +117,17 @@ run: all
 
 install: all
 	@install -Dm755 $(BIN_DIR)/$(TARGET) $(DESTDIR)$(PREFIX)/bin/$(TARGET)
-	@printf "$(GREEN)-> INSTALLED TO $(RST)$(BOLD)$(DESTDIR)$(PREFIX)/bin/$(TARGET)$(RST)\n"
+	@install -Dm644 $(MAN_DIR)/$(TARGET).1 $(DESTDIR)$(PREFIX)/share/man/man1/$(TARGET).1
+	@install -Dm644 $(COMP_DIR)/$(TARGET).bash $(DESTDIR)$(PREFIX)/share/bash-completion/completions/$(TARGET)
+	@install -Dm644 $(COMP_DIR)/_$(TARGET) $(DESTDIR)$(PREFIX)/share/zsh/site-functions/_$(TARGET)
+	@printf "$(GREEN)-> INSTALLED TO $(RST)$(BOLD)$(DESTDIR)$(PREFIX)$(RST) (binary, man page, bash and zsh completions)\n"
 
 
 uninstall:
 	@rm -f $(DESTDIR)$(PREFIX)/bin/$(TARGET)
+	@rm -f $(DESTDIR)$(PREFIX)/share/man/man1/$(TARGET).1
+	@rm -f $(DESTDIR)$(PREFIX)/share/bash-completion/completions/$(TARGET)
+	@rm -f $(DESTDIR)$(PREFIX)/share/zsh/site-functions/_$(TARGET)
 
 
 clean:
