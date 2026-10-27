@@ -1,13 +1,58 @@
 #include "image.h"
 
 
-// * Create an IMG_t struct from a JPEG or PNG file. 
+// * Compute the size of the image once fitted inside the terminal while
+// * keeping its aspect ratio. Images are only shrunk, never enlarged.
+// * param: width: the image width, replaced by the fitted width.
+// * param: height: the image height, replaced by the fitted height.
+static void fit_to_terminal(size_t* width, size_t* height)
+{
+    size_t cols;
+    size_t rows;
+    size_t max_width;
+    size_t max_height;
+    size_t new_width;
+    size_t new_height;
+
+    if (get_terminal_size(&cols, &rows))
+        return; 
+
+    // Each character cell holds 2 pixels vertically (▄).
+    max_width = cols;
+    max_height = rows > RESERVED_ROWS ? (rows - RESERVED_ROWS) * 2 : 2;
+
+    if (*width <= max_width && *height <= max_height)
+        return; 
+
+    // Keep the most limiting dimension and scale the other one.
+    if (*width * max_height > *height * max_width)
+    {
+        new_width = max_width;
+        new_height = (*height * max_width + *width / 2) / *width;
+    }
+
+    else
+    {
+        new_height = max_height;
+        new_width = (*width * max_height + *height / 2) / *height;
+    }
+
+    *width = new_width ? new_width : 1;
+    *height = new_height ? new_height : 1;
+}
+
+
+// * Create an IMG_t struct from a JPEG or PNG file, resized to fit inside the
+// * current terminal.
 // * param: filename: path to the image.
 // * return: the pointer to the IMG_t struct of NULL in case of errors. 
 IMG_t* create_img(char* filename)
 {
     IMG_t*          new_img; 
     unsigned char*  rgb;
+    unsigned char*  resized;
+    size_t          src_width;
+    size_t          src_height;
     size_t          width; 
     size_t          height; 
     size_t          channel_count; 
@@ -16,11 +61,11 @@ IMG_t* create_img(char* filename)
     switch (get_img_format(filename))
     {
         case FORMAT_JPEG:
-            rgb = decode_jpeg(filename, &width, &height, &channel_count);
+            rgb = decode_jpeg(filename, &src_width, &src_height, &channel_count);
             break;
 
         case FORMAT_PNG:
-            rgb = decode_png(filename, &width, &height, &channel_count);
+            rgb = decode_png(filename, &src_width, &src_height, &channel_count);
             break;
 
         default:
@@ -29,6 +74,21 @@ IMG_t* create_img(char* filename)
 
     if (!rgb)
         return NULL; 
+
+    // Shrink the image if it doesn't fit inside the terminal.
+    width = src_width;
+    height = src_height;
+    fit_to_terminal(&width, &height);
+
+    if (width != src_width || height != src_height)
+    {
+        resized = resize_rgb(rgb, src_width, src_height, width, height);
+        free(rgb);
+        if (!resized)
+            return NULL;
+
+        rgb = resized;
+    }
 
     new_img = malloc(sizeof(IMG_t));
     if (!new_img)
@@ -40,6 +100,8 @@ IMG_t* create_img(char* filename)
     // Initialize new_img width, height and channel count.
     new_img->height = height; 
     new_img->width = width; 
+    new_img->src_height = src_height;
+    new_img->src_width = src_width;
     new_img->channel_count = channel_count; 
 
     // Allocate memory for the pixel matrix and add one pixel if the
@@ -108,6 +170,67 @@ IMG_FORMAT_t get_img_format(char* filename)
 }
 
 
+// * Resize a RGB buffer using area averaging.
+// * param: src: the RGB buffer to resize.
+// * param: src_width: width of the source buffer.
+// * param: src_height: height of the source buffer.
+// * param: dst_width: width of the resized buffer.
+// * param: dst_height: height of the resized buffer.
+// * return: the resized RGB buffer (that need to be freed) or NULL in case of
+// *         errors.
+unsigned char* resize_rgb(unsigned char* src, size_t src_width, size_t src_height, size_t dst_width, size_t dst_height)
+{
+    unsigned char*  dst;
+    unsigned char*  src_pixel;
+    size_t          x, y;
+    size_t          sx, sy;
+    size_t          x0, x1, y0, y1;
+    size_t          sum[3];
+    size_t          count;
+    size_t          c;
+
+    dst = malloc(sizeof(unsigned char) * dst_width * dst_height * 3);
+    if (!dst)
+        return NULL; 
+
+    for (y = 0; y < dst_height; y++)
+    {
+        // Source rows covered by this destination row.
+        y0 = y * src_height / dst_height;
+        y1 = (y + 1) * src_height / dst_height;
+        if (y1 <= y0)
+            y1 = y0 + 1;
+
+        for (x = 0; x < dst_width; x++)
+        {
+            // Source columns covered by this destination column.
+            x0 = x * src_width / dst_width;
+            x1 = (x + 1) * src_width / dst_width;
+            if (x1 <= x0)
+                x1 = x0 + 1;
+
+            sum[0] = sum[1] = sum[2] = 0;
+            count = (x1 - x0) * (y1 - y0);
+
+            for (sy = y0; sy < y1; sy++)
+            {
+                for (sx = x0; sx < x1; sx++)
+                {
+                    src_pixel = src + (sy * src_width + sx) * 3;
+                    for (c = 0; c < 3; c++)
+                        sum[c] += src_pixel[c];
+                }
+            }
+
+            for (c = 0; c < 3; c++)
+                dst[(y * dst_width + x) * 3 + c] = (sum[c] + count / 2) / count;
+        }
+    }
+
+    return dst;
+}
+
+
 // * Load a pixel row scan into the correct pixel row of the IMG_t struct. 
 // * param: img: the img where the pixel row need to be inserted. 
 // * param: pixel_row_t: the RGB pixel row that need to be inserted
@@ -154,10 +277,21 @@ void draw_image(IMG_t *img)
     }
 
     // finish the print with some information. 
-    printf(
-        "\x1b[1mIMG SIZE : %ldx%ld with %ld channel(s) color.\x1b[0m\n\n", 
-        img->width, 
-        img->height, 
-        img->channel_count
-    ); 
+    if (img->width != img->src_width || img->height != img->src_height)
+        printf(
+            "\x1b[1mIMG SIZE : %ldx%ld (resized to %ldx%ld) with %ld channel(s) color.\x1b[0m\n\n",
+            img->src_width,
+            img->src_height,
+            img->width,
+            img->height,
+            img->channel_count
+        );
+
+    else
+        printf(
+            "\x1b[1mIMG SIZE : %ldx%ld with %ld channel(s) color.\x1b[0m\n\n",
+            img->width,
+            img->height,
+            img->channel_count
+        );
 }

@@ -1,5 +1,5 @@
 # console_img_viewer
-Command line tool utility that allow you to display JPEG and PNG images directly into the console. 
+Command line tool utility that allow you to display JPEG and PNG images directly into the console. Images that are bigger than the terminal are automatically resized to fit inside it. 
 
 
 <p align="center">
@@ -33,7 +33,7 @@ After that, you can run the script by using the command:
 ```
 
 # Limitation 
-Please note that the current version of this program only supports JPEG and PNG file formats (the format is detected from the file content, not its extension). Transparent PNG pixels are displayed over a black background. Additionally, if the image file is too large, it may not display correctly in the terminal, as it could exceed the available number of rows and columns. Feel free to implement other formats yourself! :)
+Please note that the current version of this program only supports JPEG and PNG file formats (the format is detected from the file content, not its extension). Transparent PNG pixels are displayed over a black background. Images are only shrunk to fit the terminal, small images are never enlarged. Feel free to implement other formats yourself! :)
 
 # Licence
 - romainflcht

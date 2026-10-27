@@ -13,7 +13,7 @@ LINK        = -ljpeg -lpng
 
 # COMPILATION
 INCLUDES = $(wildcard $(INCS_DIR)/*.h)
-SOURCES  = main.c pixel.c image.c utils.c jpeg_handler.c png_handler.c args.c
+SOURCES  = main.c pixel.c image.c utils.c jpeg_handler.c png_handler.c terminal.c args.c
 OBJS     = $(addprefix obj/,$(SOURCES:.c=.o))
 
 # RUN
