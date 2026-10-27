@@ -9,11 +9,11 @@ BUILD_DIR = build
 # COMPILER OPTIONS  
 CC          = gcc
 FLAGS       = -Wall -Wextra -Werror -g -I$(INCS_DIR)
-LINK        = -ljpeg 
+LINK        = -ljpeg -lpng 
 
 # COMPILATION
 INCLUDES = $(wildcard $(INCS_DIR)/*.h)
-SOURCES  = main.c pixel.c image.c utils.c jpeg_handler.c args.c
+SOURCES  = main.c pixel.c image.c utils.c jpeg_handler.c png_handler.c args.c
 OBJS     = $(addprefix obj/,$(SOURCES:.c=.o))
 
 # RUN

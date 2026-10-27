@@ -6,14 +6,25 @@
 #include <jpeglib.h>
 
 
+// __ DEFINIFIONS ______________________________________________________________
+#define JPEG_SIGNATURE_LEN 3
+
+
+// __ TYPES DEFINITIONS ________________________________________________________
 typedef struct {
     FILE*                         file_jpeg; 
     struct jpeg_decompress_struct cinfo; 
     struct jpeg_error_mgr         jpeg_err_handler; 
-    unsigned char*                pixel_scan_row;
 } JPEG_HANDLER_t;
 
+
 // __ FUNCTIONS ________________________________________________________________
+// * Check if the header bytes match the JPEG signature.
+// * param: header: the first bytes of the file.
+// * param: len: the number of bytes available in header.
+// * return: 1 if the header is a JPEG signature and 0 otherwise.
+int is_jpeg(const unsigned char* header, size_t len);
+
 // * Create a JPEG_HANDLER_t structure. 
 // * param: filename: path to the the JPEG image. 
 // * return: the newly created JPEG handler or NULL in case of errors.  
@@ -22,5 +33,13 @@ JPEG_HANDLER_t* create_jpeg_handler(char* filename);
 // * Free the JPEG_HANDLER_t structure correctly.
 // * param: handler: the JPEG handler that need to be freed. 
 void free_jpeg_handler(JPEG_HANDLER_t* handler);
+
+// * Decode a JPEG image into a RGB buffer (3 bytes per pixel).
+// * param: filename: path to the JPEG image.
+// * param: width: where the image width will be stored.
+// * param: height: where the image height will be stored.
+// * param: channel_count: where the original channel count will be stored.
+// * return: the RGB buffer (that need to be freed) or NULL in case of errors.
+unsigned char* decode_jpeg(char* filename, size_t* width, size_t* height, size_t* channel_count);
 
 #endif

@@ -1,59 +1,61 @@
 #include "image.h"
 
 
-// * Create an IMG_t struct but doesn't initialize the PIXEL_t matrix. 
+// * Create an IMG_t struct from a JPEG or PNG file. 
+// * param: filename: path to the image.
 // * return: the pointer to the IMG_t struct of NULL in case of errors. 
 IMG_t* create_img(char* filename)
 {
     IMG_t*          new_img; 
-    JPEG_HANDLER_t* handler; 
-    size_t          height; 
+    unsigned char*  rgb;
     size_t          width; 
+    size_t          height; 
     size_t          channel_count; 
+    size_t          line;
 
-    handler = create_jpeg_handler(filename); 
-    if (!handler)
-        return NULL; 
-
-    height = handler->cinfo.image_height; 
-    width = handler->cinfo.image_width; 
-    channel_count = handler->cinfo.num_components; 
-
-    // Allocate memory for the pixel row buffer to read the jpeg line by line. 
-    handler->pixel_scan_row = malloc(sizeof(unsigned char) * width * channel_count); 
-    if (!handler->pixel_scan_row)
+    switch (get_img_format(filename))
     {
-        free_jpeg_handler(handler); 
-        return NULL; 
+        case FORMAT_JPEG:
+            rgb = decode_jpeg(filename, &width, &height, &channel_count);
+            break;
+
+        case FORMAT_PNG:
+            rgb = decode_png(filename, &width, &height, &channel_count);
+            break;
+
+        default:
+            return NULL;
     }
+
+    if (!rgb)
+        return NULL; 
 
     new_img = malloc(sizeof(IMG_t));
     if (!new_img)
     {
-        free_jpeg_handler(handler); 
+        free(rgb);
         return NULL; 
     }
 
-    // Initialize new_img handler, width, height and channel count. 
-    new_img->handler = handler; 
+    // Initialize new_img width, height and channel count.
     new_img->height = height; 
     new_img->width = width; 
     new_img->channel_count = channel_count; 
 
     // Allocate memory for the pixel matrix and add one pixel if the
-    // image height is odd.
-    if (height % 2)
-        new_img->img = malloc(sizeof(PIXEL_t) * new_img->width * ((new_img->height + 1) / 2)); 
-    
-    else
-        new_img->img = malloc(sizeof(PIXEL_t) * new_img->width * (new_img->height / 2)); 
-
+    // image height is odd. calloc leaves the missing bottom row black.
+    new_img->img = calloc(new_img->width * ((new_img->height + 1) / 2), sizeof(PIXEL_t));
     if (!new_img->img)
     {
+        free(rgb);
         free_img(new_img); 
         return NULL; 
     }
 
+    for (line = 0; line < height; line++)
+        load_pixelscan(new_img, rgb + line * width * 3, line + 1);
+
+    free(rgb);
     return new_img; 
 }
 
@@ -64,17 +66,11 @@ void free_img(IMG_t* img)
 {
     if (!img)
         return; 
-    
+
     if (img->img)
     {
         free(img->img);
         img->img = NULL; 
-    } 
-
-    if (img->handler)
-    {
-        free_jpeg_handler(img->handler); 
-        img->handler = NULL; 
     }
 
     free(img); 
@@ -82,38 +78,39 @@ void free_img(IMG_t* img)
 }
 
 
-// * Load the jpeg img into the IMG_t data structure. 
-// * param: img: the IMG_t structure where JPEG data need to be inserted in. 
-// * return: 0 if no error occured and 1 otherwise. 
-int load_jpeg(IMG_t* img)
+// * Detect the format of an image file by reading its signature.
+// * param: filename: path to the image.
+// * return: the format of the image or FORMAT_UNKNOWN.
+IMG_FORMAT_t get_img_format(char* filename)
 {
-    int retval; 
+    FILE*           file;
+    unsigned char   header[PNG_SIGNATURE_LEN];
+    size_t          len;
 
-    if(!jpeg_start_decompress(&(img->handler->cinfo)))
-        return 1;
-    
-
-    while(img->handler->cinfo.output_scanline < img->handler->cinfo.image_height)
+    file = fopen(filename, "rb");
+    if (!file)
     {
-        // Read one row of pixels of the image loaded in JPEG and stores it 
-        // inside pixel_scan_row. 
-        retval = jpeg_read_scanlines(&(img->handler->cinfo), &(img->handler->pixel_scan_row), 1); 
-        if (!retval)
-            return 1; 
-
-        // Load the pixel row into the IMG_t struct. 
-        load_pixelscan(img, img->handler->pixel_scan_row, img->handler->cinfo.output_scanline); 
+        printf("File \"%s\" not found, please check your path.\n", filename);
+        return FORMAT_UNKNOWN;
     }
 
-    // Free the decompression. 
-    jpeg_finish_decompress(&(img->handler->cinfo)); 
-    return 0; 
+    len = fread(header, 1, sizeof(header), file);
+    fclose(file);
+
+    if (is_jpeg(header, len))
+        return FORMAT_JPEG;
+
+    if (is_png(header, len))
+        return FORMAT_PNG;
+
+    printf("File \"%s\" is not a supported image (JPEG or PNG).\n", filename);
+    return FORMAT_UNKNOWN;
 }
 
 
 // * Load a pixel row scan into the correct pixel row of the IMG_t struct. 
 // * param: img: the img where the pixel row need to be inserted. 
-// * param: pixel_row_t: the pixel row that need to be inserted 
+// * param: pixel_row_t: the RGB pixel row that need to be inserted
 // *                     (unsigned char ptr). 
 // * param: line: the row where the pixel row need to be inserted. 
 void load_pixelscan(IMG_t* img, pixel_row_t* pixel_scanline, unsigned int line)
@@ -125,18 +122,10 @@ void load_pixelscan(IMG_t* img, pixel_row_t* pixel_scanline, unsigned int line)
     unsigned short int  b; 
 
     for (i = 0; i < img->width; i++)
-    { 
-        if (img->channel_count < 3)
-            // Only one channel mean grayscale image, r, g and b have the same 
-            // value. 
-            r = g = b =  pixel_scanline[i * 3];
-
-        else
-        {
-            r = pixel_scanline[i * img->channel_count + 0]; 
-            g = pixel_scanline[i * img->channel_count + 1]; 
-            b = pixel_scanline[i * img->channel_count + 2]; 
-        }
+    {
+        r = pixel_scanline[i * 3 + 0];
+        g = pixel_scanline[i * 3 + 1];
+        b = pixel_scanline[i * 3 + 2];
 
         rgb_to_hex(r, g, b, &hex); 
         change_pixel_color((img->img + i + (line - 1) / 2 * img->width), hex, (line - 1) % 2); 
@@ -153,15 +142,10 @@ void draw_image(IMG_t *img)
     size_t i; 
     size_t total_matrix_len; 
 
-    if (img->height % 2)
-        total_matrix_len = img->width * ((img->height + 1) / 2);
-
-    else
-        total_matrix_len = img->width * (img->height / 2);
-
+    total_matrix_len = img->width * ((img->height + 1) / 2);
 
     for (i = 0; i < total_matrix_len; i++)
-    { 
+    {
         draw_pixel((img->img + i)); 
 
         // Go to the next line if we reach the end of the pixel row. 

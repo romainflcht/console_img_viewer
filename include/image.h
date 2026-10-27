@@ -2,8 +2,8 @@
 #define _IMAGE_H_
 
 #include <stdio.h>
-#include <jpeglib.h>
 #include "jpeg_handler.h"
+#include "png_handler.h"
 #include "pixel.h"
 #include "utils.h"
 
@@ -14,18 +14,25 @@
 // __ TYPES DEFINITIONS ________________________________________________________
 typedef unsigned char pixel_row_t;
 
+typedef enum
+{
+    FORMAT_UNKNOWN,
+    FORMAT_JPEG,
+    FORMAT_PNG
+} IMG_FORMAT_t;
+
 typedef struct
 {
     size_t  height; 
     size_t  width; 
     size_t  channel_count; 
     PIXEL_t *img; 
-    JPEG_HANDLER_t* handler; 
 } IMG_t;
 
 
 // __ FUNCTIONS ________________________________________________________________
-// * Create an IMG_t struct but doesn't initialize the PIXEL_t matrix. 
+// * Create an IMG_t struct from a JPEG or PNG file. 
+// * param: filename: path to the image.
 // * return: the pointer to the IMG_t struct of NULL in case of errors. 
 IMG_t* create_img(char* filename); 
 
@@ -37,14 +44,14 @@ void free_img(IMG_t* img);
 // * param: img: image that will be drawn to the screen. 
 void draw_image(IMG_t *img); 
 
-// * Load the jpeg img into the IMG_t data structure. 
-// * param: img: the IMG_t structure where JPEG data need to be inserted in. 
-// * return: 0 if no error occured and 1 otherwise. 
-int load_jpeg(IMG_t* img); 
+// * Detect the format of an image file by reading its signature.
+// * param: filename: path to the image.
+// * return: the format of the image or FORMAT_UNKNOWN.
+IMG_FORMAT_t get_img_format(char* filename);
 
 // * Load a pixel row scan into the correct pixel row of the IMG_t struct. 
 // * param: img: the img where the pixel row need to be inserted. 
-// * param: pixel_row_t: the pixel row that need to be inserted 
+// * param: pixel_row_t: the RGB pixel row that need to be inserted
 // *                     (unsigned char ptr). 
 // * param: line: the row where the pixel row need to be inserted. 
 void load_pixelscan(IMG_t* img, pixel_row_t* pixel_scanline, unsigned int line);
