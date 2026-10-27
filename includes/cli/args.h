@@ -11,6 +11,7 @@
 #include "version.h"
 #include "options.h"
 #include "display/colors.h"
+#include "image/image.h"
 
 
 // __ DEFINIFIONS ______________________________________________________________

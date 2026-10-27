@@ -9,6 +9,7 @@
 #include "decoders/png_handler.h"
 #include "decoders/gif_handler.h"
 #include "decoders/webp_handler.h"
+#include "decoders/pnm_handler.h"
 #include "display/terminal.h"
 #include "display/pixel.h"
 #include "display/renderer.h"
@@ -28,6 +29,10 @@
 #define RESERVED_TITLE_ROWS  1
 
 
+// Formats listed in the error and help messages. 
+#define SUPPORTED_FORMATS "JPEG, PNG, GIF, WebP, PBM/PGM/PPM"
+
+
 // __ TYPES DEFINITIONS ________________________________________________________
 typedef unsigned char pixel_row_t;
 
@@ -37,7 +42,8 @@ typedef enum
     FORMAT_JPEG,
     FORMAT_PNG,
     FORMAT_GIF,
-    FORMAT_WEBP
+    FORMAT_WEBP,
+    FORMAT_PNM
 } IMG_FORMAT_t;
 
 typedef struct
