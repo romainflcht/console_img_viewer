@@ -1,5 +1,5 @@
 # console_img_viewer
-Command line tool utility that allow you to display JPEG and PNG images directly into the console. Images that are bigger than the terminal are automatically resized to fit inside it, and JPEG photos are rotated following their EXIF orientation. 
+Command line tool utility that allow you to display JPEG and PNG images directly into the console. Images that are bigger than the terminal are automatically resized to fit inside it (the size of the font is taken into account to keep the right proportions), and JPEG photos are rotated following their EXIF orientation. 
 
 
 <p align="center">
