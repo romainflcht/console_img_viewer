@@ -8,13 +8,19 @@
 
 
 // __ DEFINIFIONS ______________________________________________________________
-// Worst case size of one cell: "\x1b[38;2;255;255;255;48;2;255;255;255m" + ▄.
+// Worst case size of one cell: cursor move "\x1b[65535C" and colors
+// "\x1b[38;2;255;255;255;48;2;255;255;255m" + ▄.
 #define CELL_MAX_LEN 48
 
 // Worst case size of the escape sequences added at the end of each row.
 #define ROW_END_MAX_LEN 8
 
-#define ESC_RESET "\x1b[0m"
+// Worst case size of the escape sequences added around a frame.
+#define FRAME_EXTRA_LEN 32
+
+#define ESC_RESET       "\x1b[0m"
+#define ESC_SYNC_BEGIN  "\x1b[?2026h"
+#define ESC_SYNC_END    "\x1b[?2026l"
 
 
 // __ TYPES DEFINITIONS ________________________________________________________
@@ -29,9 +35,12 @@ typedef struct
 // * Draw a pixel matrix to the stdout with a single write. Color escape
 // * sequences are only sent when the color changes from the previous cell.
 // * param: pixels: the pixel matrix (width * rows cells).
+// * param: previous: the pixel matrix drawn just before, right above the
+// *        cursor, or NULL. When given, the cursor goes back to its top and
+// *        only the cells that changed are drawn again.
 // * param: width: number of cells per row.
 // * param: rows: number of rows of cells.
 // * return: 0 if no error occured and 1 otherwise.
-int draw_pixels(PIXEL_t* pixels, size_t width, size_t rows);
+int draw_pixels(PIXEL_t* pixels, PIXEL_t* previous, size_t width, size_t rows);
 
 #endif

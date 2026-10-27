@@ -51,82 +51,146 @@ static void fit_to_terminal(size_t* width, size_t* height)
 }
 
 
-// * Create an IMG_t struct from a JPEG or PNG file, resized to fit inside the
-// * current terminal.
+// * Make room for one more frame in the IMG_t struct. 
+// * param: img: the image. 
+// * return: 0 if no error occured and 1 otherwise. 
+static int grow_frames(IMG_t* img)
+{
+    PIXEL_t*    frames; 
+    int*        delays; 
+    size_t      capacity; 
+    size_t      cell_count; 
+
+    if (img->frame_count < img->frame_capacity)
+        return 0; 
+
+    capacity = img->frame_capacity ? img->frame_capacity * 2 : 1; 
+    cell_count = img->width * ((img->height + 1) / 2); 
+
+    frames = realloc(img->img, sizeof(PIXEL_t) * cell_count * capacity); 
+    if (!frames)
+        return 1; 
+
+    img->img = frames; 
+
+    delays = realloc(img->delays, sizeof(int) * capacity); 
+    if (!delays)
+        return 1; 
+
+    img->delays = delays; 
+    img->frame_capacity = capacity; 
+    return 0; 
+}
+
+
+// * Add a decoded frame to the image (FRAME_CALLBACK_t). The first frame sets 
+// * the image size, every frame is resized to fit inside the terminal. 
+// * param: rgb: the frame in RGB (3 bytes per pixel). 
+// * param: width: width of the frame. 
+// * param: height: height of the frame. 
+// * param: channel_count: channel count of the original image. 
+// * param: delay_ms: how long the frame is displayed, in milliseconds. 
+// * param: user: the IMG_t struct. 
+// * return: 0 if no error occured and 1 otherwise. 
+static int add_frame(unsigned char* rgb, size_t width, size_t height, size_t channel_count, int delay_ms, void* user)
+{
+    IMG_t*          img; 
+    unsigned char*  resized; 
+    PIXEL_t*        frame; 
+    size_t          cell_count; 
+    size_t          line; 
+
+    img = user; 
+
+    // The first frame gives the size of the image. 
+    if (!img->frame_count)
+    {
+        img->src_width = width; 
+        img->src_height = height; 
+        img->channel_count = channel_count; 
+        img->width = width; 
+        img->height = height; 
+        fit_to_terminal(&img->width, &img->height); 
+    }
+
+    // Shrink the frame if it doesn't fit inside the terminal. 
+    resized = NULL; 
+    if (img->width != width || img->height != height)
+    {
+        resized = resize_rgb(rgb, width, height, img->width, img->height); 
+        if (!resized)
+            return 1; 
+
+        rgb = resized; 
+    }
+
+    if (grow_frames(img))
+    {
+        free(resized); 
+        return 1; 
+    }
+
+    // The missing bottom row stays black if the image height is odd. 
+    cell_count = img->width * ((img->height + 1) / 2); 
+    frame = img->img + img->frame_count * cell_count; 
+    memset(frame, 0, sizeof(PIXEL_t) * cell_count); 
+
+    for (line = 0; line < img->height; line++)
+        load_pixelscan(img, frame, rgb + line * img->width * 3, line + 1); 
+
+    img->delays[img->frame_count] = delay_ms; 
+    img->frame_count++; 
+    free(resized); 
+    return 0; 
+}
+
+
+// * Create an IMG_t struct from a JPEG, PNG or GIF file, resized to fit inside 
+// * the current terminal. Animated images keep all their frames. 
 // * param: filename: path to the image.
 // * return: the pointer to the IMG_t struct of NULL in case of errors. 
 IMG_t* create_img(char* filename)
 {
     IMG_t*          new_img; 
     unsigned char*  rgb;
-    unsigned char*  resized;
-    size_t          src_width;
-    size_t          src_height;
     size_t          width; 
     size_t          height; 
     size_t          channel_count; 
-    size_t          line;
+    int             retval; 
+
+    new_img = calloc(1, sizeof(IMG_t)); 
+    if (!new_img)
+        return NULL; 
 
     switch (get_img_format(filename))
     {
         case FORMAT_JPEG:
-            rgb = decode_jpeg(filename, &src_width, &src_height, &channel_count);
+            rgb = decode_jpeg(filename, &width, &height, &channel_count);
+            retval = !rgb || add_frame(rgb, width, height, channel_count, 0, new_img); 
+            free(rgb); 
             break;
 
         case FORMAT_PNG:
-            rgb = decode_png(filename, &src_width, &src_height, &channel_count);
+            rgb = decode_png(filename, &width, &height, &channel_count);
+            retval = !rgb || add_frame(rgb, width, height, channel_count, 0, new_img); 
+            free(rgb); 
             break;
 
+        case FORMAT_GIF:
+            retval = decode_gif(filename, add_frame, new_img); 
+            break; 
+
         default:
-            return NULL;
+            retval = 1; 
+            break; 
     }
 
-    if (!rgb)
-        return NULL; 
-
-    // Shrink the image if it doesn't fit inside the terminal.
-    width = src_width;
-    height = src_height;
-    fit_to_terminal(&width, &height);
-
-    if (width != src_width || height != src_height)
+    if (retval || !new_img->frame_count)
     {
-        resized = resize_rgb(rgb, src_width, src_height, width, height);
-        free(rgb);
-        if (!resized)
-            return NULL;
-
-        rgb = resized;
-    }
-
-    new_img = malloc(sizeof(IMG_t));
-    if (!new_img)
-    {
-        free(rgb);
-        return NULL; 
-    }
-
-    // Initialize new_img width, height and channel count.
-    new_img->height = height; 
-    new_img->width = width; 
-    new_img->src_height = src_height;
-    new_img->src_width = src_width;
-    new_img->channel_count = channel_count; 
-
-    // Allocate memory for the pixel matrix and add one pixel if the
-    // image height is odd. calloc leaves the missing bottom row black.
-    new_img->img = calloc(new_img->width * ((new_img->height + 1) / 2), sizeof(PIXEL_t));
-    if (!new_img->img)
-    {
-        free(rgb);
         free_img(new_img); 
         return NULL; 
     }
 
-    for (line = 0; line < height; line++)
-        load_pixelscan(new_img, rgb + line * width * 3, line + 1);
-
-    free(rgb);
     return new_img; 
 }
 
@@ -142,6 +206,12 @@ void free_img(IMG_t* img)
     {
         free(img->img);
         img->img = NULL; 
+    }
+
+    if (img->delays)
+    {
+        free(img->delays); 
+        img->delays = NULL; 
     }
 
     free(img); 
@@ -174,7 +244,10 @@ IMG_FORMAT_t get_img_format(char* filename)
     if (is_png(header, len))
         return FORMAT_PNG;
 
-    printf("File \"%s\" is not a supported image (JPEG or PNG).\n", filename);
+    if (is_gif(header, len))
+        return FORMAT_GIF;
+
+    printf("File \"%s\" is not a supported image (JPEG, PNG or GIF).\n", filename);
     return FORMAT_UNKNOWN;
 }
 
@@ -240,12 +313,13 @@ unsigned char* resize_rgb(unsigned char* src, size_t src_width, size_t src_heigh
 }
 
 
-// * Load a pixel row scan into the correct pixel row of the IMG_t struct. 
+// * Load a pixel row scan into the correct pixel row of a frame. 
 // * param: img: the img where the pixel row need to be inserted. 
+// * param: frame: the pixel matrix of the frame. 
 // * param: pixel_row_t: the RGB pixel row that need to be inserted
 // *                     (unsigned char ptr). 
 // * param: line: the row where the pixel row need to be inserted. 
-void load_pixelscan(IMG_t* img, pixel_row_t* pixel_scanline, unsigned int line)
+void load_pixelscan(IMG_t* img, PIXEL_t* frame, pixel_row_t* pixel_scanline, unsigned int line)
 {
     size_t              i; 
     int                 hex; 
@@ -260,36 +334,45 @@ void load_pixelscan(IMG_t* img, pixel_row_t* pixel_scanline, unsigned int line)
         b = pixel_scanline[i * 3 + 2];
 
         rgb_to_hex(r, g, b, &hex); 
-        change_pixel_color((img->img + i + (line - 1) / 2 * img->width), hex, (line - 1) % 2); 
+        change_pixel_color((frame + i + (line - 1) / 2 * img->width), hex, (line - 1) % 2); 
     }
 
     return; 
 }
 
 
-// * Draw the IMG_t pixel matrix to the stdout. 
+// * Draw the IMG_t pixel matrix to the stdout, animated images are played 
+// * when the output is a terminal. 
 // * param: img: image that will be drawn to the screen. 
-void draw_image(IMG_t *img)
+// * param: loop: 1 to play animations until Ctrl-C, 0 to play them once. 
+// * return: 1 if the user pressed Ctrl-C during an animation, 0 otherwise. 
+int draw_image(IMG_t *img, int loop)
 {
-    if (draw_pixels(img->img, img->width, (img->height + 1) / 2))
-        return; 
+    size_t  rows; 
+    int     interrupted; 
+
+    rows = (img->height + 1) / 2; 
+    interrupted = 0; 
+
+    // Animations can't be played when the output is redirected, only the 
+    // first frame is written. 
+    if (img->frame_count > 1 && isatty(STDOUT_FILENO))
+        interrupted = play_animation(img->img, img->delays, img->frame_count, img->width, rows, loop); 
+
+    else if (draw_pixels(img->img, NULL, img->width, rows))
+        return 0; 
 
     // finish the print with some information. 
-    if (img->width != img->src_width || img->height != img->src_height)
-        printf(
-            "\x1b[1mIMG SIZE : %ldx%ld (resized to %ldx%ld) with %ld channel(s) color.\x1b[0m\n\n",
-            img->src_width,
-            img->src_height,
-            img->width,
-            img->height,
-            img->channel_count
-        );
+    printf("\x1b[1mIMG SIZE : %ldx%ld", img->src_width, img->src_height); 
 
-    else
-        printf(
-            "\x1b[1mIMG SIZE : %ldx%ld with %ld channel(s) color.\x1b[0m\n\n",
-            img->width,
-            img->height,
-            img->channel_count
-        );
+    if (img->width != img->src_width || img->height != img->src_height)
+        printf(" (resized to %ldx%ld)", img->width, img->height); 
+
+    printf(" with %ld channel(s) color", img->channel_count); 
+
+    if (img->frame_count > 1)
+        printf(" and %ld frames", img->frame_count); 
+
+    printf(".\x1b[0m\n\n"); 
+    return interrupted; 
 }
