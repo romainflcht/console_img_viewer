@@ -44,7 +44,11 @@ After that, you can run the script by using the command:
 | `--dither=MODE` | How colors are approximated: `auto` (default: `fs` for images, `ordered` for animations), `fs` (Floyd-Steinberg), `ordered` or `none`. |
 | `-a`, `--ascii` | Draw with ASCII characters (one per pixel, chosen by brightness). Used automatically when the locale is not UTF-8. |
 | `--utf8` | Draw with half blocks even if the locale is not UTF-8. |
-| `-l`, `--loop` |Loop animations until `Ctrl-C` (they are played once by default). |
+| `-l`, `--loop` | Play animations until `Ctrl-C` (they are played once by default). |
+| `-n`, `--plays=N` | Play animations `N` times. |
+| `-L`, `--file-loop` | Play animations as many times as the file says (GIF NETSCAPE loop count like browsers, WebP loop count). |
+| `-f`, `--fps=N` | Draw at most `N` frames per second, frames are skipped but the animation keeps its speed (slow links). |
+| `--frame=N` | Only display the frame `N` (from 1) of an animation. |
 | `-h`, `--help` | Show the help. |
 | `-V`, `--version` | Show the version. |
 
