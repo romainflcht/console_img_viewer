@@ -331,21 +331,29 @@ IMG_t* create_img(char* filename, const OPTIONS_t* options)
     new_img->format = get_img_format(data, len); 
     switch (new_img->format)
     {
+#ifdef WITH_JPEG
         case FORMAT_JPEG:
             retval = decode_jpeg(&decoder); 
             break;
+#endif
 
+#ifdef WITH_PNG
         case FORMAT_PNG:
             retval = decode_png(&decoder); 
             break;
+#endif
 
+#ifdef WITH_GIF
         case FORMAT_GIF:
             retval = decode_gif(&decoder); 
             break; 
+#endif
 
+#ifdef WITH_WEBP
         case FORMAT_WEBP:
             retval = decode_webp(&decoder);
             break;
+#endif
 
         case FORMAT_PNM:
             retval = decode_pnm(&decoder);
@@ -355,8 +363,14 @@ IMG_t* create_img(char* filename, const OPTIONS_t* options)
             retval = decode_bmp(&decoder); 
             break; 
 
+        case FORMAT_UNKNOWN:
+            print_error(decoder.name, "not a supported image (" SUPPORTED_FORMATS ")");
+            retval = 1;
+            break;
+
+        // Recognized, but the decoder was disabled at build time. 
         default:
-            print_error(decoder.name, "not a supported image (" SUPPORTED_FORMATS ")"); 
+            print_error(decoder.name, "%s support was not compiled in", get_format_name(new_img->format)); 
             retval = 1; 
             break; 
     }
@@ -391,11 +405,9 @@ IMG_t* create_img(char* filename, const OPTIONS_t* options)
 // * param: name: the name of the file. 
 void print_img_info(IMG_t* img, const char* name)
 {
-    static const char* format_names[] = {"unknown", "JPEG", "PNG", "GIF", "WebP", "PNM", "BMP"}; 
-
     printf("%s: %s %zux%zu, %zu channel%s", 
         name, 
-        format_names[img->format], 
+        get_format_name(img->format), 
         img->src_width, 
         img->src_height, 
         img->channel_count, 
@@ -441,34 +453,6 @@ void free_img(IMG_t* img)
 
     free(img); 
     return; 
-}
-
-
-// * Detect the format of an image from its signature. 
-// * param: data: the content of the file. 
-// * param: len: the size of the data. 
-// * return: the format of the image or FORMAT_UNKNOWN. 
-IMG_FORMAT_t get_img_format(const unsigned char* data, size_t len)
-{
-    if (is_jpeg(data, len))
-        return FORMAT_JPEG;
-
-    if (is_png(data, len))
-        return FORMAT_PNG;
-
-    if (is_gif(data, len))
-        return FORMAT_GIF;
-
-    if (is_webp(data, len))
-        return FORMAT_WEBP;
-
-    if (is_pnm(data, len))
-        return FORMAT_PNM;
-
-    if (is_bmp(data, len))
-        return FORMAT_BMP; 
-
-    return FORMAT_UNKNOWN;
 }
 
 

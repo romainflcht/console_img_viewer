@@ -1,19 +1,6 @@
 #include "decoders/jpeg_handler.h"
 
 
-// * Check if the header bytes match the JPEG signature.
-// * param: header: the first bytes of the file.
-// * param: len: the number of bytes available in header.
-// * return: 1 if the header is a JPEG signature and 0 otherwise.
-int is_jpeg(const unsigned char* header, size_t len)
-{
-    if (len < JPEG_SIGNATURE_LEN)
-        return 0;
-
-    return header[0] == 0xFF && header[1] == 0xD8 && header[2] == 0xFF;
-}
-
-
 // * Replace libjpeg default error_exit: save the error message and jump back
 // * to the last setjmp() instead of exiting the program.
 // * param: cinfo: the libjpeg structure that raised the error.

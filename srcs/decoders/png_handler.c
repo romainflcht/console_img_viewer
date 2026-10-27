@@ -1,19 +1,6 @@
 #include "decoders/png_handler.h"
 
 
-// * Check if the header bytes match the PNG signature. 
-// * param: header: the first bytes of the file. 
-// * param: len: the number of bytes available in header. 
-// * return: 1 if the header is a PNG signature and 0 otherwise. 
-int is_png(const unsigned char* header, size_t len)
-{
-    if (len < PNG_SIGNATURE_LEN)
-        return 0; 
-
-    return !png_sig_cmp(header, 0, PNG_SIGNATURE_LEN); 
-}
-
-
 // * Decode a PNG image into RGB and give it to the decoder callback. 
 // * Transparent pixels are blended with a black background. 
 // * param: decoder: the encoded image and the frame callback. 

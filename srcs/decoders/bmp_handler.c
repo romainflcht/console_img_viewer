@@ -1,19 +1,6 @@
 #include "decoders/bmp_handler.h"
 
 
-// * Check if the header bytes match the BMP signature. 
-// * param: header: the first bytes of the file. 
-// * param: len: the number of bytes available in header. 
-// * return: 1 if the header is a BMP signature and 0 otherwise. 
-int is_bmp(const unsigned char* header, size_t len)
-{
-    if (len < BMP_FILE_HEADER_LEN + 4)
-        return 0; 
-
-    return header[0] == 'B' && header[1] == 'M'; 
-}
-
-
 // * Read a little endian 16 bits value. 
 // * param: p: pointer to the value. 
 // * return: the value. 

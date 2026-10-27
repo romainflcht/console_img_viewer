@@ -1,20 +1,6 @@
 #include "decoders/gif_handler.h"
 
 
-// * Check if the header bytes match the GIF signature.
-// * param: header: the first bytes of the file.
-// * param: len: the number of bytes available in header.
-// * return: 1 if the header is a GIF signature and 0 otherwise.
-int is_gif(const unsigned char* header, size_t len)
-{
-    if (len < GIF_SIGNATURE_LEN)
-        return 0;
-
-    return !memcmp(header, GIF87_STAMP, GIF_SIGNATURE_LEN)
-        || !memcmp(header, GIF89_STAMP, GIF_SIGNATURE_LEN);
-}
-
-
 // * Get a readable message for a giflib error code. 
 // * param: error: the giflib error code. 
 // * return: the error message. 

@@ -1,19 +1,6 @@
 #include "decoders/webp_handler.h"
 
 
-// * Check if the header bytes match the WebP signature. 
-// * param: header: the first bytes of the file. 
-// * param: len: the number of bytes available in header. 
-// * return: 1 if the header is a WebP signature and 0 otherwise. 
-int is_webp(const unsigned char* header, size_t len)
-{
-    if (len < WEBP_SIGNATURE_LEN)
-        return 0; 
-
-    return !memcmp(header, "RIFF", 4) && !memcmp(header + 8, "WEBP", 4); 
-}
-
-
 // * Convert a RGBA buffer to RGB, blending transparent pixels with black. 
 // * param: rgba: the RGBA buffer. 
 // * param: rgb: the RGB buffer where the result is written. 

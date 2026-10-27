@@ -10,8 +10,6 @@
 
 
 // __ DEFINIFIONS ______________________________________________________________
-#define GIF_SIGNATURE_LEN 6
-
 // Application extension storing the loop count. 
 #define NETSCAPE_EXT        "NETSCAPE2.0"
 #define NETSCAPE_EXT_LEN    11
@@ -32,12 +30,6 @@ typedef struct
 
 
 // __ FUNCTIONS ________________________________________________________________
-// * Check if the header bytes match the GIF signature.
-// * param: header: the first bytes of the file.
-// * param: len: the number of bytes available in header.
-// * return: 1 if the header is a GIF signature and 0 otherwise.
-int is_gif(const unsigned char* header, size_t len);
-
 // * Decode every frame of a GIF image. Each frame is composed over the
 // * previous ones (following its disposal mode) and given to the callback.
 // * Transparent pixels are black.
