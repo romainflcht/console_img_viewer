@@ -4,6 +4,11 @@
 #include <stdlib.h>
 
 
+// __ DEFINIFIONS ______________________________________________________________
+// plays value to follow the loop count stored in the file (-L). 
+#define PLAYS_FROM_FILE -1
+
+
 // __ TYPES DEFINITIONS ________________________________________________________
 // Colors used to draw the image (-c). 
 typedef enum
@@ -45,7 +50,10 @@ typedef enum
 // Display options given on the command line. 
 typedef struct
 {
-    int     loop;           // play animations until Ctrl-C. 
+    int     plays;          // times animations are played: 0 until Ctrl-C, 
+                            // PLAYS_FROM_FILE to follow the file. 
+    int     max_fps;        // maximum frames drawn per second, 0 no limit. 
+    size_t  frame;          // only display this frame (from 1), 0 for all. 
     size_t  term_cols;      // terminal size forced with -s, 0 to detect it. 
     size_t  term_rows; 
     size_t  max_cols;       // maximum image size given with -w/-H, 0 if none. 

@@ -35,7 +35,11 @@ static void print_usage(FILE* stream)
         "                        UTF-8\n"
         "\n"
         "Animation:\n"
-        "  -l, --loop            loop animations until Ctrl-C (played once by default)\n"
+        "  -l, --loop            play animations until Ctrl-C (once by default)\n"
+        "  -n, --plays=N         play animations N times\n"
+        "  -L, --file-loop       play animations as many times as the file says\n"
+        "  -f, --fps=N           draw at most N frames per second (slow links)\n"
+        "      --frame=N         only display the frame N (from 1) of an animation\n"
         "\n"
         "Other:\n"
         "  -h, --help            show this help and exit\n"
@@ -132,7 +136,11 @@ int parse_arg(int argc, char** argv, ARGS_t* args)
         {"dither",  required_argument, NULL, OPT_DITHER}, 
         {"ascii",   no_argument,       NULL, 'a'}, 
         {"utf8",    no_argument,       NULL, OPT_UTF8}, 
-        {"loop",    no_argument,       NULL, 'l'}, 
+        {"loop",      no_argument,       NULL, 'l'}, 
+        {"plays",     required_argument, NULL, 'n'}, 
+        {"file-loop", no_argument,       NULL, 'L'}, 
+        {"fps",       required_argument, NULL, 'f'}, 
+        {"frame",     required_argument, NULL, OPT_FRAME}, 
         {"help",    no_argument,       NULL, 'h'}, 
         {"version", no_argument,       NULL, 'V'}, 
         {NULL,      0,                 NULL, 0}
@@ -140,12 +148,14 @@ int parse_arg(int argc, char** argv, ARGS_t* args)
     static const char* color_names[] = {"auto", "truecolor", "256", "16", "8", "mono"}; 
     static const char* dither_names[] = {"auto", "fs", "ordered", "none"}; 
     static const char* fit_names[] = {"both", "width", "height", "none"}; 
-    int opt; 
-    int index; 
+    size_t  count; 
+    int     opt; 
+    int     index; 
 
     memset(&args->options, 0, sizeof(OPTIONS_t)); 
+    args->options.plays = 1; 
 
-    while ((opt = getopt_long(argc, argv, "s:w:H:uCc:alhV", long_options, NULL)) != -1)
+    while ((opt = getopt_long(argc, argv, "s:w:H:uCc:aln:Lf:hV", long_options, NULL)) != -1)
     {
         switch (opt)
         {
@@ -217,7 +227,37 @@ int parse_arg(int argc, char** argv, ARGS_t* args)
                 break; 
 
             case 'l':
-                args->options.loop = 1;
+                args->options.plays = 0; 
+                break; 
+
+            case 'n':
+                if (parse_count(optarg, &count) || count > INT_MAX)
+                {
+                    print_error(NULL, "invalid number of plays '%s'", optarg); 
+                    return ARGS_ERROR; 
+                }
+                args->options.plays = count; 
+                break; 
+
+            case 'L':
+                args->options.plays = PLAYS_FROM_FILE; 
+                break; 
+
+            case 'f':
+                if (parse_count(optarg, &count) || count > 1000)
+                {
+                    print_error(NULL, "invalid frame rate '%s', expected 1 to 1000", optarg); 
+                    return ARGS_ERROR; 
+                }
+                args->options.max_fps = count; 
+                break; 
+
+            case OPT_FRAME:
+                if (parse_count(optarg, &args->options.frame))
+                {
+                    print_error(NULL, "invalid frame '%s'", optarg); 
+                    return ARGS_ERROR; 
+                }
                 break; 
 
             case 'h':

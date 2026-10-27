@@ -38,6 +38,8 @@ typedef struct
     SIZE_CALLBACK_t         on_size; 
     FRAME_CALLBACK_t        on_frame; 
     void*                   user; 
+    int                     loop_count; // out: times the animation is played 
+                                        // (0 forever), -1 if not stored. 
 } DECODER_t;
 
 #endif

@@ -79,7 +79,11 @@ int decode_webp(DECODER_t* decoder)
         return 1; 
     }
 
-    rgb = malloc((size_t)info.canvas_width * info.canvas_height * 3); 
+    // Still images have one frame, their loop count means nothing. 
+    if (info.frame_count > 1)
+        decoder->loop_count = info.loop_count; 
+
+    rgb = malloc((size_t)info.canvas_width * info.canvas_height * 3);
     if (!rgb)
     {
         WebPAnimDecoderDelete(anim_decoder); 

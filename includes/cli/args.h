@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <limits.h>
 #include <getopt.h>
 #include "utils/utils.h"
 #include "version.h"
@@ -21,6 +22,7 @@
 #define OPT_FIT     256
 #define OPT_DITHER  257
 #define OPT_UTF8    258
+#define OPT_FRAME   259
 
 
 // __ TYPES DEFINITIONS ________________________________________________________
