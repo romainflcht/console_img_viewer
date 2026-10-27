@@ -4,9 +4,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 #include <getopt.h>
 #include "utils/utils.h"
 #include "version.h"
+#include "options.h"
 
 
 // __ DEFINIFIONS ______________________________________________________________
@@ -18,9 +20,9 @@
 // __ TYPES DEFINITIONS ________________________________________________________
 typedef struct
 {
-    int     loop; 
-    int     file_count; 
-    char**  files; 
+    OPTIONS_t   options; 
+    int         file_count; 
+    char**      files; 
 } ARGS_t;
 
 

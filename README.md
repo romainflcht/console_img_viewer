@@ -34,11 +34,14 @@ After that, you can run the script by using the command:
 
 | Option | Description |
 |---|---|
-| `-l`, `--loop` | Loop animations until `Ctrl-C` (they are played once by default). |
+| `-s`, `--size=COLSxROWS` | Terminal size, when it can't be detected. |
+| `-l`, `--loop` |Loop animations until `Ctrl-C` (they are played once by default). |
 | `-h`, `--help` | Show the help. |
 | `-V`, `--version` | Show the version. |
 
-`FILE` can be `-` to read the image from the standard input, for example `ssh board cat /tmp/capture.png | tv -`. Pipes and devices can be read too.
+The terminal size is asked to the kernel, then read from `$COLUMNS` and `$LINES`, then asked to the terminal itself with an escape sequence. Serial consoles often report a `0x0` size to the kernel but most terminal emulators (picocom, minicom, screen...) answer the escape sequence. Use `-s` when nothing works.
+
+`FILE` can be `-` to readthe image from the standard input, for example `ssh board cat /tmp/capture.png | tv -`. Pipes and devices can be read too.
 
 `Ctrl-C` during an animation stops the program. When the output is redirected to a file, only the first frame of an animation is written.
 
