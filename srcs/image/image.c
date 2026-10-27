@@ -1,4 +1,4 @@
-#include "image.h"
+#include "image/image.h"
 
 
 // * Compute the size of the image once fitted inside the terminal while

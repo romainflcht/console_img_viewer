@@ -2,8 +2,8 @@
 #include <ctype.h>
 #include <termios.h>
 
-#include "args.h"
-#include "image.h"
+#include "cli/args.h"
+#include "image/image.h"
 
 
 int main(int argc, char** argv)

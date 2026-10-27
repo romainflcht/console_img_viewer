@@ -1,4 +1,4 @@
-#include "jpeg_handler.h"
+#include "decoders/jpeg_handler.h"
 
 
 // * Check if the header bytes match the JPEG signature.

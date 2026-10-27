@@ -29,7 +29,24 @@ make
 ```
 After that, you can run the script by using the command:
 ```bash
-./build/main <path_to_your_image> [other_images ...]
+./bin/tv <path_to_your_image> [other_images ...]
+```
+
+You can also install `tv` system wide (default prefix is `/usr/local`):
+```bash
+sudo make install
+```
+
+# Project structure
+```
+srcs/               sources, main.c is at the root
+├── cli/            command-line arguments parsing
+├── decoders/       one decoder per image format (JPEG, PNG...)
+├── display/        terminal size and pixel drawing
+├── image/          image creation, resizing and drawing
+└── utils/          color conversion helpers
+includes/           headers, same layout as srcs/
+bin/                compiled executable (tv)
 ```
 
 # Limitation 

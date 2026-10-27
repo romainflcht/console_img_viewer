@@ -1,4 +1,4 @@
-#include "terminal.h"
+#include "display/terminal.h"
 
 
 // * Get the size of the terminal the program is running in.

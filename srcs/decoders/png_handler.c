@@ -1,4 +1,4 @@
-#include "png_handler.h"
+#include "decoders/png_handler.h"
 
 
 // * Check if the header bytes match the PNG signature.
