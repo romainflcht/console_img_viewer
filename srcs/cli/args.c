@@ -284,7 +284,7 @@ int parse_arg(int argc, char** argv, ARGS_t* args)
                 return ARGS_EXIT; 
 
             case 'V':
-                printf(PROGRAM_NAME " " TV_VERSION "\n"); 
+                printf(PROGRAM_NAME " " TV_VERSION "\nFormats: " SUPPORTED_FORMATS "\n"); 
                 return ARGS_EXIT; 
 
             default:

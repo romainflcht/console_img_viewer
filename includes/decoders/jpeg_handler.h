@@ -13,8 +13,6 @@
 
 
 // __ DEFINIFIONS ______________________________________________________________
-#define JPEG_SIGNATURE_LEN 3
-
 // libjpeg can decode at M/8 of the image size (DCT scaling). 
 #define JPEG_SCALE_DENOM 8
 
@@ -36,12 +34,6 @@ typedef struct {
 
 
 // __ FUNCTIONS ________________________________________________________________
-// * Check if the header bytes match the JPEG signature.
-// * param: header: the first bytes of the file.
-// * param: len: the number of bytes available in header.
-// * return: 1 if the header is a JPEG signature and 0 otherwise.
-int is_jpeg(const unsigned char* header, size_t len);
-
 // * Create a JPEG_HANDLER_t structure and read the JPEG header.
 // * param: decoder: the encoded image.
 // * return: the newly created JPEG handler or NULL in case of errors.

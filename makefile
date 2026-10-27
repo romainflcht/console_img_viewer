@@ -9,17 +9,63 @@ BIN_DIR   = bin
 # INSTALL OPTIONS
 PREFIX    = /usr/local
 
-# COMPILER OPTIONS
+# OPTIONAL DECODERS (make WITH_JPEG=0 ...), BMP and netpbm are always built
+WITH_JPEG ?= 1
+WITH_PNG  ?= 1
+WITH_GIF  ?= 1
+WITH_WEBP ?= 1
+
+# COMPILER OPTIONS (CC, CFLAGS, CPPFLAGS, LDFLAGS and LDLIBS can be given on 
+# the command line, e.g. for cross compilation)
 CC          = gcc
 CFLAGS      = -Wall -Wextra -Werror -g
-CPPFLAGS    = -I$(INCS_DIR)
+CPPFLAGS    =
 LDFLAGS     =
-LDLIBS      = -ljpeg -lpng -lgif -lwebpdemux -lwebp
+LDLIBS      =
+
+DECODERS_DIR = $(SRCS_DIR)/decoders
+FEATURES     =
+FEATURE_LIBS =
+EXCLUDED     =
+
+ifeq ($(WITH_JPEG),1)
+    FEATURES     += -DWITH_JPEG
+    FEATURE_LIBS += -ljpeg
+else
+    EXCLUDED     += $(DECODERS_DIR)/jpeg_handler.c
+endif
+
+ifeq ($(WITH_PNG),1)
+    FEATURES     += -DWITH_PNG
+    FEATURE_LIBS += -lpng
+else
+    EXCLUDED     += $(DECODERS_DIR)/png_handler.c
+endif
+
+ifeq ($(WITH_GIF),1)
+    FEATURES     += -DWITH_GIF
+    FEATURE_LIBS += -lgif
+else
+    EXCLUDED     += $(DECODERS_DIR)/gif_handler.c
+endif
+
+ifeq ($(WITH_WEBP),1)
+    FEATURES     += -DWITH_WEBP
+    FEATURE_LIBS += -lwebpdemux -lwebp
+else
+    EXCLUDED     += $(DECODERS_DIR)/webp_handler.c
+endif
+
+ALL_CPPFLAGS = -I$(INCS_DIR) $(FEATURES) $(CPPFLAGS)
+ALL_LDLIBS   = $(FEATURE_LIBS) $(LDLIBS)
 
 # COMPILATION
 INCLUDES = $(shell find $(INCS_DIR) -name '*.h')
-SOURCES  = $(shell find $(SRCS_DIR) -name '*.c')
+SOURCES  = $(filter-out $(EXCLUDED), $(shell find $(SRCS_DIR) -name '*.c'))
 OBJS     = $(SOURCES:$(SRCS_DIR)/%.c=$(OBJS_DIR)/%.o)
+
+# Objects are rebuilt when the build options change. 
+BUILD_FLAGS = $(OBJS_DIR)/build.flags
 
 # RUN
 ARGS = "img/img(15x15).jpeg"
@@ -41,19 +87,25 @@ CUR_HOME = \e[H
 all: $(BIN_DIR)/$(TARGET)
 
 
-$(BIN_DIR)/$(TARGET): $(OBJS)
+$(BIN_DIR)/$(TARGET): $(OBJS) $(BUILD_FLAGS)
 	@printf "\n$(RED)--SOURCES FILE FOUND : $(RST)$(BOLD)$(SOURCES)$(RST)\n"
 	@printf "$(YELLOW)--OBJECTS FILE FOUND : $(RST)$(BOLD)$(OBJS)$(RST)\n"
 	@printf "\n$(CYAN)~LINKING $(RST)$(BOLD)$(OBJS_DIR)$(RST)$(CYAN) TO EXECUTABLE TARGET $(RST)$(BOLD)$@$(RST)\n"
 	@mkdir -p $(BIN_DIR)
-	@$(CC) $^ -o $@ $(CFLAGS) $(LDFLAGS) $(LDLIBS)
+	@$(CC) $(OBJS) -o $@ $(CFLAGS) $(LDFLAGS) $(ALL_LDLIBS)
 	@printf "$(GREEN)-> FINISHED!$(RST)\n"
 
 
-$(OBJS_DIR)/%.o: $(SRCS_DIR)/%.c $(INCLUDES)
+$(OBJS_DIR)/%.o: $(SRCS_DIR)/%.c $(INCLUDES) $(BUILD_FLAGS)
 	@printf "$(MAGENTA)~COMPILING $(RST)$(BOLD)$<$(RST)$(MAGENTA) TO $(RST)$(BOLD)$@$(RST)\n"
 	@mkdir -p $(dir $@)
-	@$(CC) -c $< -o $@ $(CFLAGS) $(CPPFLAGS)
+	@$(CC) -c $< -o $@ $(CFLAGS) $(ALL_CPPFLAGS)
+
+
+$(BUILD_FLAGS): FORCE
+	@mkdir -p $(OBJS_DIR)
+	@echo '$(CC) $(CFLAGS) $(ALL_CPPFLAGS) $(LDFLAGS) $(ALL_LDLIBS)' | cmp -s - $@ \
+		|| echo '$(CC) $(CFLAGS) $(ALL_CPPFLAGS) $(LDFLAGS) $(ALL_LDLIBS)' > $@
 
 
 run: all
@@ -77,4 +129,4 @@ clean:
 	@printf "$(GREEN)-> FINISHED!$(RST)\n"
 
 
-.PHONY: all clean run install uninstall
+.PHONY: all clean run install uninstall FORCE

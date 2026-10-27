@@ -77,6 +77,18 @@ An 80x40 photo takes about 49KB in truecolor, 15KB in 16 colors and 4KB in mono.
 
 Errors are written on `stderr` as `tv: <file>: <message>`. The exit code is `0` when every file was displayed, `1` when at least one file could not be displayed and `130` when the program was stopped with `Ctrl-C`.
 
+### Optional decoders
+The JPEG, PNG, GIF and WebP decoders can be disabled to build `tv` without their library, BMP and netpbm (PBM, PGM, PPM) have no dependency and are always built. A build without any image library is useful on small embedded targets:
+```bash
+make WITH_JPEG=0 WITH_PNG=0 WITH_GIF=0 WITH_WEBP=0
+```
+`tv -V` lists the formats built in, a disabled format gives a clear error (`JPEG support was not compiled in`). Changing these options rebuilds what is needed, no `make clean` required.
+
+`CC`, `CFLAGS`, `CPPFLAGS`, `LDFLAGS` and `LDLIBS` can be given on the command line, e.g. for cross compilation:
+```bash
+make CC=aarch64-linux-gnu-gcc CPPFLAGS=--sysroot=/path/to/sysroot LDFLAGS=--sysroot=/path/to/sysroot
+```
+
 You can also install `tv` system wide (default prefix is `/usr/local`):
 ```bash
 sudo make install
@@ -88,7 +100,7 @@ srcs/               sources, main.c is at the root
 ├── cli/            command-line arguments parsing
 ├── decoders/       one decoder per image format (JPEG, PNG, GIF, WebP, BMP, PNM) and EXIF parsing
 ├── display/        terminal size, rendering and animation playback
-├── image/          image creation, resizing, rotation and drawing
+├── image/          format detection, image creation, resizing, rotation and drawing
 └── utils/          color conversion, error and file reading helpers
 includes/           headers, same layout as srcs/
 bin/                compiled executable (tv)

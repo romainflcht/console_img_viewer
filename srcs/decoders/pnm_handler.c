@@ -1,19 +1,6 @@
 #include "decoders/pnm_handler.h"
 
 
-// * Check if the header bytes match a netpbm signature (P1 to P6). 
-// * param: header: the first bytes of the file. 
-// * param: len: the number of bytes available in header. 
-// * return: 1 if the header is a netpbm signature and 0 otherwise. 
-int is_pnm(const unsigned char* header, size_t len)
-{
-    if (len < PNM_SIGNATURE_LEN)
-        return 0; 
-
-    return header[0] == 'P' && header[1] >= '1' && header[1] <= '6' && isspace(header[2]); 
-}
-
-
 // * Skip whitespaces and comments (from # to the end of the line). 
 // * param: reader: the read position. 
 static void skip_blanks(PNM_READER_t* reader)

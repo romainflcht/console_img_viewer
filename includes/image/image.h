@@ -5,12 +5,22 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
-#include "decoders/jpeg_handler.h"
-#include "decoders/png_handler.h"
-#include "decoders/gif_handler.h"
-#include "decoders/webp_handler.h"
+#include "image/format.h"
+#ifdef WITH_JPEG
+    #include "decoders/jpeg_handler.h"
+#endif
+#ifdef WITH_PNG
+    #include "decoders/png_handler.h"
+#endif
+#ifdef WITH_GIF
+    #include "decoders/gif_handler.h"
+#endif
+#ifdef WITH_WEBP
+    #include "decoders/webp_handler.h"
+#endif
 #include "decoders/pnm_handler.h"
 #include "decoders/bmp_handler.h"
+#include "decoders/exif.h"
 #include "display/terminal.h"
 #include "display/pixel.h"
 #include "display/renderer.h"
@@ -30,23 +40,8 @@
 #define RESERVED_TITLE_ROWS  1
 
 
-// Formats listed in the error and help messages. 
-#define SUPPORTED_FORMATS "JPEG, PNG, GIF, WebP, BMP, PBM/PGM/PPM"
-
-
 // __ TYPES DEFINITIONS ________________________________________________________
 typedef unsigned char pixel_row_t;
-
-typedef enum
-{
-    FORMAT_UNKNOWN,
-    FORMAT_JPEG,
-    FORMAT_PNG,
-    FORMAT_GIF,
-    FORMAT_WEBP,
-    FORMAT_PNM,
-    FORMAT_BMP
-} IMG_FORMAT_t;
 
 typedef struct
 {
@@ -94,12 +89,6 @@ void free_img(IMG_t* img);
 // * param: img: image that will be drawn to the screen. 
 // * return: 1 if the user pressed Ctrl-C during an animation, 0 otherwise. 
 int draw_image(IMG_t *img); 
-
-// * Detect the format of an image from its signature. 
-// * param: data: the content of the file. 
-// * param: len: the size of the data. 
-// * return: the format of the image or FORMAT_UNKNOWN. 
-IMG_FORMAT_t get_img_format(const unsigned char* data, size_t len); 
 
 // * Resize a RGB buffer using area averaging.
 // * param: src: the RGB buffer to resize.

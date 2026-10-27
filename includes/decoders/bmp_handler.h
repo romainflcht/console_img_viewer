@@ -9,7 +9,6 @@
 
 
 // __ DEFINIFIONS ______________________________________________________________
-#define BMP_SIGNATURE_LEN   2
 #define BMP_FILE_HEADER_LEN 14
 
 // DIB header sizes. 
@@ -46,12 +45,6 @@ typedef struct
 
 
 // __ FUNCTIONS ________________________________________________________________
-// * Check if the header bytes match the BMP signature. 
-// * param: header: the first bytes of the file. 
-// * param: len: the number of bytes available in header. 
-// * return: 1 if the header is a BMP signature and 0 otherwise. 
-int is_bmp(const unsigned char* header, size_t len); 
-
 // * Decode a BMP image (1, 4, 8, 16, 24 or 32 bits, palette, bit fields and 
 // * RLE4/RLE8 compression) and give it to the decoder callback. Transparent 
 // * pixels are blended with a black background. 
