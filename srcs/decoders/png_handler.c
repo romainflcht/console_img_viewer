@@ -32,7 +32,7 @@ unsigned char* decode_png(char* filename, size_t* width, size_t* height, size_t*
 
     if (!png_image_begin_read_from_file(&image, filename))
     {
-        printf("Unable to read PNG \"%s\": %s\n", filename, image.message);
+        print_error(filename, "unable to read PNG: %s", image.message);
         return NULL;
     }
 
@@ -58,7 +58,7 @@ unsigned char* decode_png(char* filename, size_t* width, size_t* height, size_t*
 
     if (!png_image_finish_read(&image, &background, buffer, 0, NULL))
     {
-        printf("Unable to decode PNG \"%s\": %s\n", filename, image.message);
+        print_error(filename, "unable to decode PNG: %s", image.message);
         png_image_free(&image);
         free(buffer);
         return NULL;

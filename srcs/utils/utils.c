@@ -24,3 +24,23 @@ void rgb_to_hex(int r, int g, int b, int* hex)
     *hex = (r << 16) | (g << 8) | (b << 0);
     return; 
 }
+
+
+// * Print an error message on stderr, prefixed with the program name and the 
+// * file concerned: "tv: file: message". 
+// * param: filename: the file concerned or NULL. 
+// * param: format: printf like format of the message. 
+void print_error(const char* filename, const char* format, ...)
+{
+    va_list args; 
+
+    fflush(stdout); 
+    fprintf(stderr, PROGRAM_NAME ": "); 
+    if (filename)
+        fprintf(stderr, "%s: ", filename); 
+
+    va_start(args, format); 
+    vfprintf(stderr, format, args); 
+    va_end(args); 
+    fprintf(stderr, "\n"); 
+}

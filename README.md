@@ -39,6 +39,8 @@ After that, you can run the script by using the command:
 
 `Ctrl-C` during an animation stops the program. When the output is redirected to a file, only the first frame of an animation is written.
 
+Errors are written on `stderr` as `tv: <file>: <message>`. The exit code is `0` when every file was displayed, `1` when at least one file could not be displayed and `130` when the program was stopped with `Ctrl-C`.
+
 You can also install `tv` system wide (default prefix is `/usr/local`):
 ```bash
 sudo make install

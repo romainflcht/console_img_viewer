@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <png.h>
+#include "utils/utils.h"
 
 
 // __ DEFINIFIONS ______________________________________________________________

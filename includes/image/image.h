@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 #include <unistd.h>
 #include "decoders/jpeg_handler.h"
 #include "decoders/png_handler.h"

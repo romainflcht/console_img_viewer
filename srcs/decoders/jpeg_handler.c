@@ -38,7 +38,7 @@ JPEG_HANDLER_t* create_jpeg_handler(char* filename)
     jpeg_file = fopen(filename, "rb"); 
     if (!jpeg_file)
     {
-        printf("File \"%s\" not found, please check your path.\n", filename);
+        print_error(filename, "%s", strerror(errno));
         return NULL; 
     }
 
@@ -63,7 +63,7 @@ JPEG_HANDLER_t* create_jpeg_handler(char* filename)
     // libjpeg jumps back here if the header is corrupted. 
     if (setjmp(new_handler->jpeg_err_handler.jump_buffer))
     {
-        printf("Unable to read JPEG \"%s\": %s\n", filename, new_handler->jpeg_err_handler.message); 
+        print_error(filename, "unable to read JPEG: %s", new_handler->jpeg_err_handler.message);
         free_jpeg_handler(new_handler); 
         return NULL; 
     }
@@ -159,7 +159,7 @@ unsigned char* decode_jpeg(char* filename, size_t* width, size_t* height, size_t
     // space can't be converted to RGB. 
     if (setjmp(handler->jpeg_err_handler.jump_buffer))
     {
-        printf("Unable to decode JPEG \"%s\": %s\n", filename, handler->jpeg_err_handler.message); 
+        print_error(filename, "unable to decode JPEG: %s", handler->jpeg_err_handler.message);
         free(buffer);
         free_jpeg_handler(handler);
         return NULL; 
