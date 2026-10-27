@@ -35,6 +35,10 @@ After that, you can run the script by using the command:
 | Option | Description |
 |---|---|
 | `-s`, `--size=COLSxROWS` | Terminal size, when it can't be detected. |
+| `-w`, `--width=COLS` | Maximum width of the image in columns. |
+| `-H`, `--height=ROWS` | Maximum height of the image in rows. |
+| `-u`, `--upscale` | Enlarge small images up to the maximum size (they are only shrunk by default). |
+| `--fit=MODE` | Terminal dimensions limiting the image: `both` (default), `width`, `height` or `none`. |
 | `-l`, `--loop` |Loop animations until `Ctrl-C` (they are played once by default). |
 | `-h`, `--help` | Show the help. |
 | `-V`, `--version` | Show the version. |
@@ -65,7 +69,7 @@ bin/                compiled executable (tv)
 ```
 
 # Limitation 
-Please note that the current version of this program only supports JPEG, PNG, GIF and WebP file formats (the format is detected from the file content, not its extension). Transparent pixels are displayed over a black background. Images are only shrunk to fit the terminal, small images are never enlarged. Feel free to implement other formats yourself! :)
+Please note that the current version of this program only supports JPEG, PNG, GIF and WebP file formats (the format is detected from the file content, not its extension). Transparent pixels are displayed over a black background. Images are only shrunk to fit the terminal, use `-u` to enlarge small images. Feel free to implement other formats yourself! :)
 
 # Licence
 - romainflcht

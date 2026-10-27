@@ -1,50 +1,81 @@
 #include "image/image.h"
 
 
-// * Compute the size of the image once fitted inside the terminal while
-// * keeping its aspect ratio. Images are only shrunk, never enlarged, but 
-// * their height is corrected when the font cells are not twice as high as 
-// * wide so the image is not stretched. 
-// * param: width: the image width, replaced by the fitted width.
-// * param: height: the image height, replaced by the fitted height.
-// * param: options: the display options (forced terminal size). 
-static void fit_to_terminal(size_t* width, size_t* height, const OPTIONS_t* options)
+// * Get the terminal size, forced with -s or detected. 
+// * param: options: the display options. 
+// * param: term: where the terminal size will be stored. 
+// * return: 0 if the size is known and 1 otherwise. 
+static int get_display_terminal(const OPTIONS_t* options, TERMINAL_t* term)
 {
-    TERMINAL_t term; 
-    size_t max_width;
-    size_t max_height;
-    size_t new_width;
-    size_t new_height;
-
     // A size given with -s wins over the detected one. 
     if (options->term_cols)
     {
-        term.cols = options->term_cols; 
-        term.rows = options->term_rows; 
-        term.cell_width = 0; 
-        term.cell_height = 0; 
+        term->cols = options->term_cols; 
+        term->rows = options->term_rows; 
+        term->cell_width = 0; 
+        term->cell_height = 0; 
+        return 0; 
     }
 
-    else if (get_terminal_size(&term))
-        return; 
+    return get_terminal_size(term); 
+}
+
+
+// * Compute the size the image will be displayed at, keeping its aspect 
+// * ratio. The maximum size comes from -w/-H or from the terminal (following 
+// * --fit). Images are only shrunk, unless -u allows to enlarge them. The 
+// * height is corrected when the font cells are not twice as high as wide so 
+// * the image is not stretched. 
+// * param: width: the image width, replaced by the displayed width.
+// * param: height: the image height, replaced by the displayed height.
+// * param: options: the display options. 
+static void fit_image(size_t* width, size_t* height, const OPTIONS_t* options)
+{
+    TERMINAL_t  term; 
+    int         term_known; 
+    size_t      max_width;
+    size_t      max_height;
+    size_t      new_width;
+    size_t      new_height;
+
+    term_known = !get_display_terminal(options, &term); 
 
     // Each character cell holds 2 pixels vertically (▄), so a pixel is 
     // cell_width wide and cell_height / 2 high. When the font size is known, 
     // scale the height so the pixels displayed have the right proportions. 
-    if (term.cell_width && term.cell_height)
+    if (term_known && term.cell_width && term.cell_height)
     {
         new_height = (*height * 2 * term.cell_width + term.cell_height / 2) / term.cell_height; 
         *height = new_height ? new_height : 1; 
     }
 
-    max_width = term.cols;
-    max_height = term.rows > RESERVED_ROWS ? (term.rows - RESERVED_ROWS) * 2 : 2;
+    // 0 means no limit on this dimension. 
+    max_width = 0; 
+    max_height = 0; 
 
-    if (*width <= max_width && *height <= max_height)
+    if (options->max_cols)
+        max_width = options->max_cols; 
+
+    else if (term_known && (options->fit == FIT_BOTH || options->fit == FIT_WIDTH))
+        max_width = term.cols; 
+
+    if (options->max_rows)
+        max_height = options->max_rows * 2; 
+
+    else if (term_known && (options->fit == FIT_BOTH || options->fit == FIT_HEIGHT))
+        max_height = term.rows > RESERVED_ROWS ? (term.rows - RESERVED_ROWS) * 2 : 2; 
+
+    if (!max_width && !max_height)
+        return; 
+
+    // Small images keep their size unless they can be enlarged. 
+    if (!options->upscale 
+        && (!max_width || *width <= max_width) 
+        && (!max_height || *height <= max_height))
         return; 
 
     // Keep the most limiting dimension and scale the other one.
-    if (*width * max_height > *height * max_width)
+    if (max_width && (!max_height || *width * max_height > *height * max_width))
     {
         new_width = max_width;
         new_height = (*height * max_width + *width / 2) / *width;
@@ -111,7 +142,7 @@ static void set_size(size_t width, size_t height, size_t channel_count, size_t* 
     img->channel_count = channel_count; 
     img->width = width; 
     img->height = height; 
-    fit_to_terminal(&img->width, &img->height, img->options); 
+    fit_image(&img->width, &img->height, img->options); 
     img->size_known = 1; 
 
     *target_width = img->width; 
@@ -385,15 +416,18 @@ void load_pixelscan(IMG_t* img, PIXEL_t* frame, pixel_row_t* pixel_scanline, uns
 // * return: 1 if the user pressed Ctrl-C during an animation, 0 otherwise. 
 int draw_image(IMG_t *img)
 {
-    size_t  rows; 
-    int     interrupted; 
+    TERMINAL_t  term; 
+    size_t      rows; 
+    int         interrupted; 
 
     rows = (img->height + 1) / 2; 
     interrupted = 0; 
 
-    // Animations can't be played when the output is redirected, only the 
-    // first frame is written. 
-    if (img->frame_count > 1 && isatty(STDOUT_FILENO))
+    // Animations are played in place by moving the cursor up, it is only 
+    // possible on a terminal and when the whole image is visible. Otherwise 
+    // only the first frame is written. 
+    if (img->frame_count > 1 && isatty(STDOUT_FILENO) 
+        && (get_display_terminal(img->options, &term) || rows < term.rows))
         interrupted = play_animation(img->img, img->delays, img->frame_count, img->width, rows, img->options->loop); 
 
     else if (draw_pixels(img->img, NULL, img->width, rows))
