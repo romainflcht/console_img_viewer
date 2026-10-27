@@ -15,6 +15,9 @@
 // __ DEFINIFIONS ______________________________________________________________
 #define JPEG_SIGNATURE_LEN 3
 
+// libjpeg can decode at M/8 of the image size (DCT scaling). 
+#define JPEG_SCALE_DENOM 8
+
 
 // __ TYPES DEFINITIONS ________________________________________________________
 // libjpeg calls exit() on fatal errors by default, this error manager jumps

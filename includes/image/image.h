@@ -42,6 +42,7 @@ typedef struct
     size_t  src_height;
     size_t  src_width;
     size_t  channel_count; 
+    int     size_known; 
     size_t  frame_count; 
     size_t  frame_capacity; 
     PIXEL_t *img;       // frame_count pixel matrices, one after the other. 
