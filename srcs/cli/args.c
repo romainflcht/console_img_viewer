@@ -42,6 +42,8 @@ static void print_usage(FILE* stream)
         "      --frame=N         only display the frame N (from 1) of an animation\n"
         "\n"
         "Other:\n"
+        "  -q, --quiet           don't print the information line under images\n"
+        "  -t, --title           print the file name before each image\n"
         "  -i, --info            only print the format, size, channels, frames\n"
         "                        and orientation of each image\n"
         "  -h, --help            show this help and exit\n"
@@ -143,6 +145,8 @@ int parse_arg(int argc, char** argv, ARGS_t* args)
         {"file-loop", no_argument,       NULL, 'L'}, 
         {"fps",       required_argument, NULL, 'f'}, 
         {"frame",     required_argument, NULL, OPT_FRAME}, 
+        {"quiet",   no_argument,       NULL, 'q'}, 
+        {"title",   no_argument,       NULL, 't'}, 
         {"info",    no_argument,       NULL, 'i'}, 
         {"help",    no_argument,       NULL, 'h'}, 
         {"version", no_argument,       NULL, 'V'}, 
@@ -158,7 +162,7 @@ int parse_arg(int argc, char** argv, ARGS_t* args)
     memset(&args->options, 0, sizeof(OPTIONS_t)); 
     args->options.plays = 1; 
 
-    while ((opt = getopt_long(argc, argv, "s:w:H:uCc:aln:Lf:ihV", long_options, NULL)) != -1)
+    while ((opt = getopt_long(argc, argv, "s:w:H:uCc:aln:Lf:qtihV", long_options, NULL)) != -1)
     {
         switch (opt)
         {
@@ -261,6 +265,14 @@ int parse_arg(int argc, char** argv, ARGS_t* args)
                     print_error(NULL, "invalid frame '%s'", optarg); 
                     return ARGS_ERROR; 
                 }
+                break; 
+
+            case 'q':
+                args->options.quiet = 1; 
+                break; 
+
+            case 't':
+                args->options.title = 1; 
                 break; 
 
             case 'i':

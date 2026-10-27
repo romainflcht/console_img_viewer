@@ -65,6 +65,8 @@ typedef struct
     DITHER_MODE_t dither; 
     CHARSET_t charset; 
     int     info;           // only print information about the images. 
+    int     quiet;          // no information line under the images. 
+    int     title;          // print the file name before each image. 
 } OPTIONS_t;
 
 #endif
