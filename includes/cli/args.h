@@ -20,6 +20,7 @@
 // Values of the long options without a short option. 
 #define OPT_FIT     256
 #define OPT_DITHER  257
+#define OPT_UTF8    258
 
 
 // __ TYPES DEFINITIONS ________________________________________________________

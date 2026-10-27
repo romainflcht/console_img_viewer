@@ -25,6 +25,14 @@ typedef enum
     DITHER_NONE
 } DITHER_MODE_t;
 
+// Characters used to draw the image (-a, --utf8). 
+typedef enum
+{
+    CHARSET_AUTO,       // ASCII when the locale is not UTF-8. 
+    CHARSET_UTF8,       // half blocks, 2 pixels per cell. 
+    CHARSET_ASCII       // one character per pixel, chosen by brightness. 
+} CHARSET_t;
+
 // Which terminal dimensions limit the image size (--fit).
 typedef enum
 {
@@ -47,6 +55,7 @@ typedef struct
     int     center;         // center the image horizontally. 
     COLOR_MODE_t colors; 
     DITHER_MODE_t dither; 
+    CHARSET_t charset; 
 } OPTIONS_t;
 
 #endif
