@@ -107,7 +107,23 @@ static void append_cell(OUTPUT_BUFFER_t* out, PIXEL_t* pixel, int* f_color, int*
 
     if (mode == COLORS_MONO)
     {
-        append_str(out, mono_blocks[(pixel->b_color << 1) | pixel->f_color]); 
+        append_str(out, mono_blocks[(pixel->b_color << 1) | pixel->f_color]);
+        return;
+    }
+
+    // Only the top pixel: ▀ with the top color, default background. 
+    if (pixel->f_color == COLOR_NONE)
+    {
+        if (*b_color != -1 || *f_color != pixel->b_color)
+        {
+            append_str(out, "\x1b[0;"); 
+            append_color(out, pixel->b_color, 0, mode); 
+            out->data[out->len++] = 'm'; 
+            *f_color = pixel->b_color; 
+            *b_color = -1; 
+        }
+
+        append_str(out, MONO_TOP_CHAR); 
         return; 
     }
 

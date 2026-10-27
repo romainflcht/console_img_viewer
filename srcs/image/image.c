@@ -248,10 +248,17 @@ static int add_frame(unsigned char* rgb, size_t width, size_t height, size_t cha
         return 1; 
     }
 
-    // The missing bottom row stays black if the image height is odd. 
+    // When the image height is odd, the bottom pixel of the last row of 
+    // cells doesn't exist: COLOR_NONE draws only the top pixel (0, no pixel, 
+    // in mono). 
     cell_count = img->width * cell_rows(img); 
     frame = img->img + img->frame_count * cell_count; 
     memset(frame, 0, sizeof(PIXEL_t) * cell_count); 
+    if (img->options->charset != CHARSET_ASCII && img->options->colors != COLORS_MONO && img->height % 2)
+    {
+        for (line = cell_count - img->width; line < cell_count; line++)
+            frame[line].f_color = COLOR_NONE; 
+    }
 
     // Convert the colors to the color mode. Animations use ordered 
     // dithering by default: Floyd-Steinberg changes the pixels between 
