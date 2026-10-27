@@ -344,11 +344,15 @@ IMG_t* create_img(char* filename, const OPTIONS_t* options)
             break; 
 
         case FORMAT_WEBP:
-            retval = decode_webp(&decoder); 
+            retval = decode_webp(&decoder);
+            break;
+
+        case FORMAT_PNM:
+            retval = decode_pnm(&decoder); 
             break; 
 
         default:
-            print_error(decoder.name, "not a supported image (JPEG, PNG, GIF or WebP)"); 
+            print_error(decoder.name, "not a supported image (" SUPPORTED_FORMATS ")"); 
             retval = 1; 
             break; 
     }
@@ -383,7 +387,7 @@ IMG_t* create_img(char* filename, const OPTIONS_t* options)
 // * param: name: the name of the file. 
 void print_img_info(IMG_t* img, const char* name)
 {
-    static const char* format_names[] = {"unknown", "JPEG", "PNG", "GIF", "WebP"}; 
+    static const char* format_names[] = {"unknown", "JPEG", "PNG", "GIF", "WebP", "PNM"}; 
 
     printf("%s: %s %zux%zu, %zu channel%s", 
         name, 
@@ -453,6 +457,9 @@ IMG_FORMAT_t get_img_format(const unsigned char* data, size_t len)
 
     if (is_webp(data, len))
         return FORMAT_WEBP;
+
+    if (is_pnm(data, len))
+        return FORMAT_PNM; 
 
     return FORMAT_UNKNOWN;
 }

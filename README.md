@@ -1,5 +1,5 @@
 # console_img_viewer
-Command line tool utility that allow you to display JPEG, PNG, GIF and WebP images directly into the console. Animated GIF and WebP are played in place. Images that are bigger than the terminal are automatically resized to fit inside it (the size of the font is taken into account to keep the right proportions), and JPEG photos are rotated following their EXIF orientation. 
+Command line tool utility that allow you to display JPEG, PNG, GIF, WebP and netpbm (PBM, PGM, PPM) images directly into the console. Animated GIF and WebP are played in place. Images that are bigger than the terminal are automatically resized to fit inside it (the size of the font is taken into account to keep the right proportions), and JPEG photos are rotated following their EXIF orientation. 
 
 
 <p align="center">
@@ -86,7 +86,7 @@ sudo make install
 ```
 srcs/               sources, main.c is at the root
 ├── cli/            command-line arguments parsing
-├── decoders/       one decoder per image format (JPEG, PNG, GIF, WebP) and EXIF parsing
+├── decoders/       one decoder per image format (JPEG, PNG, GIF, WebP, PNM) and EXIF parsing
 ├── display/        terminal size, rendering and animation playback
 ├── image/          image creation, resizing, rotation and drawing
 └── utils/          color conversion, error and file reading helpers
@@ -95,7 +95,7 @@ bin/                compiled executable (tv)
 ```
 
 # Limitation 
-Please note that the current version of this program only supports JPEG, PNG, GIF and WebP file formats (the format is detected from the file content, not its extension). Transparent pixels are displayed over a black background. Images are only shrunk to fit the terminal, use `-u` to enlarge small images. Feel free to implement other formats yourself! :)
+Please note that the current version of this program only supports JPEG, PNG, GIF, WebP and netpbm (P1 to P6, ASCII and binary, up to 16 bits) file formats (the format is detected from the file content, not its extension). Transparent pixels are displayed over a black background. Images are only shrunk to fit the terminal, use `-u` to enlarge small images. Feel free to implement other formats yourself! :)
 
 # Licence
 - romainflcht

@@ -8,7 +8,7 @@ static void print_usage(FILE* stream)
     fprintf(
         stream, 
         "Usage: " PROGRAM_NAME " [OPTION]... FILE...\n"
-        "Display JPEG, PNG, GIF and WebP images in the terminal.\n"
+        "Display " SUPPORTED_FORMATS " images in the terminal.\n"
         "With FILE -, read the standard input.\n"
         "\n"
         "Size:\n"
