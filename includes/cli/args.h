@@ -9,6 +9,7 @@
 #include "utils/utils.h"
 #include "version.h"
 #include "options.h"
+#include "display/colors.h"
 
 
 // __ DEFINIFIONS ______________________________________________________________
@@ -18,6 +19,7 @@
 
 // Values of the long options without a short option. 
 #define OPT_FIT     256
+#define OPT_DITHER  257
 
 
 // __ TYPES DEFINITIONS ________________________________________________________

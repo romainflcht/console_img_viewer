@@ -50,32 +50,66 @@ static void append_number(OUTPUT_BUFFER_t* out, size_t value)
 }
 
 
-// * Append a "r;g;b" color to the output buffer.
-// * param: out: the output buffer.
-// * param: hex: the color to append.
-static void append_color(OUTPUT_BUFFER_t* out, int hex)
+// * Append the SGR parameters of a color: "38;2;r;g;b" (truecolor), 
+// * "38;5;n" (256 colors) or "3n"/"9n" (16 and 8 colors), 48/4n/10n for the 
+// * background. 
+// * param: out: the output buffer. 
+// * param: color: the color code (0xRRGGBB or a palette index). 
+// * param: background: 1 for the background color, 0 for the foreground. 
+// * param: mode: the color mode. 
+static void append_color(OUTPUT_BUFFER_t* out, int color, int background, COLOR_MODE_t mode)
 {
-    int r, g, b;
+    int r, g, b; 
 
-    hex_to_rgb(hex, &r, &g, &b);
-    append_u8(out, r);
-    out->data[out->len++] = ';';
-    append_u8(out, g);
-    out->data[out->len++] = ';';
-    append_u8(out, b);
+    switch (mode)
+    {
+        case COLORS_TRUECOLOR:
+            hex_to_rgb(color, &r, &g, &b); 
+            append_str(out, background ? "48;2;" : "38;2;"); 
+            append_u8(out, r); 
+            out->data[out->len++] = ';'; 
+            append_u8(out, g); 
+            out->data[out->len++] = ';'; 
+            append_u8(out, b); 
+            break; 
+
+        case COLORS_256:
+            append_str(out, background ? "48;5;" : "38;5;"); 
+            append_u8(out, color); 
+            break; 
+
+        default:
+            // Colors 8 to 15 are the bright versions (90-97 and 100-107). 
+            if (color < 8)
+                append_u8(out, (background ? 40 : 30) + color); 
+
+            else
+                append_u8(out, (background ? 100 : 90) + color - 8); 
+            break; 
+    }
 }
 
 
 // * Append one cell to the output buffer, with the escape sequence needed to
-// * switch from the current colors to the cell colors.
+// * switch from the current colors to the cell colors. In mono, the cell is 
+// * drawn with a block character and no color. 
 // * param: out: the output buffer.
 // * param: pixel: the cell to append.
 // * param: f_color: the current foreground color, -1 if unknown.
 // * param: b_color: the current background color, -1 if unknown.
-static void append_cell(OUTPUT_BUFFER_t* out, PIXEL_t* pixel, int* f_color, int* b_color)
+// * param: mode: the color mode. 
+static void append_cell(OUTPUT_BUFFER_t* out, PIXEL_t* pixel, int* f_color, int* b_color, COLOR_MODE_t mode)
 {
+    // Mono: b_color is the top pixel, f_color the bottom one (0 or 1). 
+    static const char* mono_blocks[4] = {" ", MONO_BOTTOM_CHAR, MONO_TOP_CHAR, MONO_FULL_CHAR}; 
     int f_changed;
     int b_changed;
+
+    if (mode == COLORS_MONO)
+    {
+        append_str(out, mono_blocks[(pixel->b_color << 1) | pixel->f_color]); 
+        return; 
+    }
 
     f_changed = pixel->f_color != *f_color;
     b_changed = pixel->b_color != *b_color;
@@ -86,19 +120,13 @@ static void append_cell(OUTPUT_BUFFER_t* out, PIXEL_t* pixel, int* f_color, int*
         append_str(out, "\x1b[");
 
         if (f_changed)
-        {
-            append_str(out, "38;2;");
-            append_color(out, pixel->f_color);
-        }
+            append_color(out, pixel->f_color, 0, mode); 
 
         if (f_changed && b_changed)
             out->data[out->len++] = ';';
 
         if (b_changed)
-        {
-            append_str(out, "48;2;");
-            append_color(out, pixel->b_color);
-        }
+            append_color(out, pixel->b_color, 1, mode); 
 
         out->data[out->len++] = 'm';
         *f_color = pixel->f_color;
@@ -115,18 +143,23 @@ static void append_cell(OUTPUT_BUFFER_t* out, PIXEL_t* pixel, int* f_color, int*
 // * param: previous: the pixel matrix drawn just before, right above the 
 // *        cursor, or NULL. When given, the cursor goes back to its top and 
 // *        only the cells that changed are drawn again. 
-// * param: width: number of cells per row. 
-// * param: rows: number of rows of cells. 
-// * param: offset: number of empty columns before the image (centering). 
+// * param: render: size, position and color mode of the matrix. 
 // * return: 0 if no error occured and 1 otherwise. 
-int draw_pixels(PIXEL_t* pixels, PIXEL_t* previous, size_t width, size_t rows, size_t offset)
+int draw_pixels(PIXEL_t* pixels, PIXEL_t* previous, const RENDER_t* render)
 {
     OUTPUT_BUFFER_t out; 
     PIXEL_t*        pixel; 
+    size_t          width; 
+    size_t          rows; 
+    size_t          offset; 
     size_t          x, y; 
     size_t          skipped; 
     int             f_color; 
     int             b_color; 
+
+    width = render->width; 
+    rows = render->rows; 
+    offset = render->offset; 
 
     out.len = 0; 
     out.data = malloc(rows * (offset + width * CELL_MAX_LEN + ROW_END_MAX_LEN) + FRAME_EXTRA_LEN); 
@@ -182,10 +215,14 @@ int draw_pixels(PIXEL_t* pixels, PIXEL_t* previous, size_t width, size_t rows, s
                 skipped = 0; 
             }
 
-            append_cell(&out, pixel, &f_color, &b_color); 
+            append_cell(&out, pixel, &f_color, &b_color, render->colors); 
         }
 
-        append_str(&out, previous ? ESC_RESET "\r\n" : ESC_RESET "\n"); 
+        // Reset the colors only if some were written (never in mono). 
+        if (f_color != -1 || b_color != -1)
+            append_str(&out, ESC_RESET); 
+
+        append_str(&out, previous ? "\r\n" : "\n"); 
     }
 
     if (previous)

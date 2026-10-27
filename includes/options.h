@@ -5,7 +5,27 @@
 
 
 // __ TYPES DEFINITIONS ________________________________________________________
-// Which terminal dimensions limit the image size (--fit). 
+// Colors used to draw the image (-c). 
+typedef enum
+{
+    COLORS_AUTO, 
+    COLORS_TRUECOLOR, 
+    COLORS_256, 
+    COLORS_16, 
+    COLORS_8, 
+    COLORS_MONO
+} COLOR_MODE_t;
+
+// How colors are approximated with a palette (--dither). 
+typedef enum
+{
+    DITHER_AUTO,        // Floyd-Steinberg for still images, ordered for animations. 
+    DITHER_FS, 
+    DITHER_ORDERED, 
+    DITHER_NONE
+} DITHER_MODE_t;
+
+// Which terminal dimensions limit the image size (--fit).
 typedef enum
 {
     FIT_BOTH, 
@@ -25,6 +45,8 @@ typedef struct
     int     upscale;        // enlarge small images up to the maximum size. 
     FIT_MODE_t fit; 
     int     center;         // center the image horizontally. 
+    COLOR_MODE_t colors; 
+    DITHER_MODE_t dither; 
 } OPTIONS_t;
 
 #endif

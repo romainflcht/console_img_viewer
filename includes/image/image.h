@@ -13,6 +13,7 @@
 #include "display/pixel.h"
 #include "display/renderer.h"
 #include "display/animation.h"
+#include "display/colors.h"
 #include "utils/utils.h"
 #include "utils/file.h"
 #include "options.h"
@@ -86,12 +87,11 @@ IMG_FORMAT_t get_img_format(const unsigned char* data, size_t len);
 // *         errors.
 unsigned char* resize_rgb(unsigned char* src, size_t src_width, size_t src_height, size_t dst_width, size_t dst_height);
 
-// * Load a pixel row scan into the correct pixel row of a frame. 
+// * Load a row of color codes into the correct pixel row of a frame. 
 // * param: img: the img where the pixel row need to be inserted. 
 // * param: frame: the pixel matrix of the frame. 
-// * param: pixel_row_t: the RGB pixel row that need to be inserted
-// *                     (unsigned char ptr). 
+// * param: codes: the color codes of the row (see map_colors()). 
 // * param: line: the row where the pixel row need to be inserted. 
-void load_pixelscan(IMG_t* img, PIXEL_t* frame, pixel_row_t* pixel_scanline, unsigned int line);
+void load_pixelscan(IMG_t* img, PIXEL_t* frame, const int* codes, unsigned int line); 
 
 #endif
