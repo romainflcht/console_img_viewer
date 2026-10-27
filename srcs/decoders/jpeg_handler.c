@@ -178,6 +178,7 @@ int decode_jpeg(DECODER_t* decoder)
 
     channel_count = handler->cinfo.num_components;
     orientation = get_jpeg_orientation(handler); 
+    decoder->orientation = orientation; 
 
     // Ask libjpeg to convert grayscale images to RGB.
     handler->cinfo.out_color_space = JCS_RGB;

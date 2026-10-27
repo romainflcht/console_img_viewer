@@ -40,6 +40,7 @@ typedef struct
     void*                   user; 
     int                     loop_count; // out: times the animation is played 
                                         // (0 forever), -1 if not stored. 
+    int                     orientation;// out: EXIF orientation [1-8]. 
 } DECODER_t;
 
 #endif

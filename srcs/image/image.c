@@ -169,12 +169,19 @@ static void set_size(size_t width, size_t height, size_t channel_count, size_t* 
     IMG_t* img; 
 
     img = user; 
-    img->src_width = width; 
-    img->src_height = height; 
-    img->channel_count = channel_count; 
-    img->width = width; 
-    img->height = height; 
-    fit_image(&img->width, &img->height, img->options); 
+    img->src_width = width;
+    img->src_height = height;
+    img->channel_count = channel_count;
+    img->width = width;
+    img->height = height;
+
+    // In info mode nothing is drawn, JPEG are decoded at their smallest 
+    // size. 
+    if (img->options->info)
+        img->width = img->height = 1; 
+
+    else
+        fit_image(&img->width, &img->height, img->options); 
     img->size_known = 1; 
 
     *target_width = img->width; 
@@ -209,8 +216,11 @@ static int add_frame(unsigned char* rgb, size_t width, size_t height, size_t cha
     if (!img->size_known)
         set_size(width, height, channel_count, &target_width, &target_height, img); 
 
-    // With --frame, only the asked frame is kept. 
+    // With --frame, only the asked frame is kept, and in info mode the 
+    // frames are only counted. 
     img->decoded_frames++; 
+    if (img->options->info)
+        return 0; 
     if (img->options->frame && img->decoded_frames != img->options->frame)
         return 0; 
 
@@ -309,8 +319,10 @@ IMG_t* create_img(char* filename, const OPTIONS_t* options)
     decoder.on_frame = add_frame; 
     decoder.user = new_img; 
     decoder.loop_count = -1; 
+    decoder.orientation = ORIENTATION_NORMAL; 
 
-    switch (get_img_format(data, len))
+    new_img->format = get_img_format(data, len); 
+    switch (new_img->format)
     {
         case FORMAT_JPEG:
             retval = decode_jpeg(&decoder); 
@@ -336,7 +348,9 @@ IMG_t* create_img(char* filename, const OPTIONS_t* options)
 
     free(data);
 
-    // Animations stored without loop count are played once. 
+    new_img->orientation = decoder.orientation; 
+
+    // Animations stored without loop count are played once.
     new_img->loop_count = decoder.loop_count < 0 ? 1 : decoder.loop_count; 
 
     if (!retval && options->frame && options->frame > new_img->decoded_frames)
@@ -345,13 +359,49 @@ IMG_t* create_img(char* filename, const OPTIONS_t* options)
         retval = 1; 
     }
 
-    if (retval || !new_img->frame_count)
+    // In info mode no frame is kept, only counted. 
+    if (retval || (!new_img->frame_count && !options->info))
     {
         free_img(new_img);
         return NULL;
     }
 
     return new_img; 
+}
+
+
+// * Print information about the image on one line: format, size, channels, 
+// * frames, loop count and EXIF orientation (-i). 
+// * param: img: the image. 
+// * param: name: the name of the file. 
+void print_img_info(IMG_t* img, const char* name)
+{
+    static const char* format_names[] = {"unknown", "JPEG", "PNG", "GIF", "WebP"}; 
+
+    printf("%s: %s %zux%zu, %zu channel%s", 
+        name, 
+        format_names[img->format], 
+        img->src_width, 
+        img->src_height, 
+        img->channel_count, 
+        img->channel_count > 1 ? "s" : ""
+    ); 
+
+    if (img->decoded_frames > 1)
+    {
+        printf(", %zu frames", img->decoded_frames); 
+
+        if (img->loop_count)
+            printf(", played %d time%s", img->loop_count, img->loop_count > 1 ? "s" : ""); 
+
+        else
+            printf(", played forever"); 
+    }
+
+    if (img->orientation != ORIENTATION_NORMAL)
+        printf(", EXIF orientation %d", img->orientation); 
+
+    printf("\n"); 
 }
 
 
