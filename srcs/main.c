@@ -33,8 +33,15 @@ int main(int argc, char** argv)
             continue; 
         }
 
-        // Ctrl-C during an animation stops the program. 
-        retval = draw_image(img); 
+        if (args.options.info)
+        {
+            print_img_info(img, strcmp(args.files[i], STDIN_FILENAME) ? args.files[i] : STDIN_NAME); 
+            free_img(img); 
+            continue; 
+        }
+
+        // Ctrl-C during an animation stops the program.
+        retval = draw_image(img);
         free_img(img);
         img = NULL; 
 

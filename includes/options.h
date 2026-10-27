@@ -64,6 +64,7 @@ typedef struct
     COLOR_MODE_t colors; 
     DITHER_MODE_t dither; 
     CHARSET_t charset; 
+    int     info;           // only print information about the images. 
 } OPTIONS_t;
 
 #endif

@@ -49,6 +49,7 @@ After that, you can run the script by using the command:
 | `-L`, `--file-loop` | Play animations as many times as the file says (GIF NETSCAPE loop count like browsers, WebP loop count). |
 | `-f`, `--fps=N` | Draw at most `N` frames per second, frames are skipped but the animation keeps its speed (slow links). |
 | `--frame=N` | Only display the frame `N` (from 1) of an animation. |
+| `-i`, `--info` | Only print the format, size (after EXIF rotation), channels, frames, loop count and EXIF orientation of each image, one line per file. |
 | `-h`, `--help` | Show the help. |
 | `-V`, `--version` | Show the version. |
 

@@ -50,6 +50,8 @@ typedef struct
                                 // of them is kept). 
     int     loop_count;         // times the file asks to play the animation, 
                                 // 0 forever. 
+    IMG_FORMAT_t format; 
+    int     orientation;        // EXIF orientation [1-8]. 
     size_t  frame_capacity; 
     const OPTIONS_t*    options; 
     PIXEL_t *img;// frame_count pixel matrices, one after the other. 
@@ -64,6 +66,12 @@ typedef struct
 // * param: options: the display options. 
 // * return: the pointer to the IMG_t struct of NULL in case of errors. 
 IMG_t* create_img(char* filename, const OPTIONS_t* options); 
+
+// * Print information about the image on one line: format, size, channels, 
+// * frames, loop count and EXIF orientation (-i). 
+// * param: img: the image. 
+// * param: name: the name of the file. 
+void print_img_info(IMG_t* img, const char* name); 
 
 // * Free the IMG_t structure correctly.
 // * param: img: the image that need to be freed.
