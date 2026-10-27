@@ -20,6 +20,14 @@ static void print_usage(FILE* stream)
         "                        (default), width, height or none\n"
         "  -C, --center          center the image horizontally\n"
         "\n"
+        "Colors:\n"
+        "  -c, --colors=MODE     truecolor, 256, 16, 8 or mono (no color, only\n"
+        "                        blocks); auto (default) uses NO_COLOR, TERM and\n"
+        "                        COLORTERM\n"
+        "      --dither=MODE     how colors are approximated: auto (default: fs\n"
+        "                        for images, ordered for animations), fs, ordered\n"
+        "                        or none\n"
+        "\n"
         "Animation:\n"
         "  -l, --loop            loop animations until Ctrl-C (played once by default)\n"
         "\n"
@@ -76,20 +84,21 @@ static int parse_count(const char* str, size_t* value)
 }
 
 
-// * Parse a --fit mode. 
-// * param: str: the string to parse. 
-// * param: fit: where the mode will be stored. 
-// * return: 0 if the mode is valid and 1 otherwise. 
-static int parse_fit(const char* str, FIT_MODE_t* fit)
+// * Find a name in a list of names. 
+// * param: str: the name to find. 
+// * param: names: the list of names. 
+// * param: count: the number of names. 
+// * param: index: where the index of the name will be stored. 
+// * return: 0 if the name was found and 1 otherwise. 
+static int parse_name(const char* str, const char** names, size_t count, int* index)
 {
-    static const char* names[] = {"both", "width", "height", "none"}; 
     size_t i; 
 
-    for (i = 0; i < sizeof(names) / sizeof(names[0]); i++)
+    for (i = 0; i < count; i++)
     {
         if (!strcmp(str, names[i]))
         {
-            *fit = i; 
+            *index = i; 
             return 0; 
         }
     }
@@ -113,16 +122,22 @@ int parse_arg(int argc, char** argv, ARGS_t* args)
         {"upscale", no_argument,       NULL, 'u'}, 
         {"fit",     required_argument, NULL, OPT_FIT}, 
         {"center",  no_argument,       NULL, 'C'}, 
+        {"colors",  required_argument, NULL, 'c'}, 
+        {"dither",  required_argument, NULL, OPT_DITHER}, 
         {"loop",    no_argument,       NULL, 'l'}, 
         {"help",    no_argument,       NULL, 'h'}, 
         {"version", no_argument,       NULL, 'V'}, 
         {NULL,      0,                 NULL, 0}
     }; 
+    static const char* color_names[] = {"auto", "truecolor", "256", "16", "8", "mono"}; 
+    static const char* dither_names[] = {"auto", "fs", "ordered", "none"}; 
+    static const char* fit_names[] = {"both", "width", "height", "none"}; 
     int opt; 
+    int index; 
 
     memset(&args->options, 0, sizeof(OPTIONS_t)); 
 
-    while ((opt = getopt_long(argc, argv, "s:w:H:uClhV", long_options, NULL)) != -1)
+    while ((opt = getopt_long(argc, argv, "s:w:H:uCc:lhV", long_options, NULL)) != -1)
     {
         switch (opt)
         {
@@ -155,15 +170,34 @@ int parse_arg(int argc, char** argv, ARGS_t* args)
                 break; 
 
             case OPT_FIT:
-                if (parse_fit(optarg, &args->options.fit))
+                if (parse_name(optarg, fit_names, sizeof(fit_names) / sizeof(fit_names[0]), &index))
                 {
-                    print_error(NULL, "invalid fit mode '%s', expected both, width, height or none", optarg); 
-                    return ARGS_ERROR; 
+                    print_error(NULL, "invalid fit mode '%s', expected both, width, height or none", optarg);
+                    return ARGS_ERROR;
                 }
-                break; 
+                args->options.fit = index; 
+                break;
 
             case 'C':
                 args->options.center = 1; 
+                break; 
+
+            case 'c':
+                if (parse_name(optarg, color_names, sizeof(color_names) / sizeof(color_names[0]), &index))
+                {
+                    print_error(NULL, "invalid color mode '%s', expected auto, truecolor, 256, 16, 8 or mono", optarg); 
+                    return ARGS_ERROR; 
+                }
+                args->options.colors = index; 
+                break; 
+
+            case OPT_DITHER:
+                if (parse_name(optarg, dither_names, sizeof(dither_names) / sizeof(dither_names[0]), &index))
+                {
+                    print_error(NULL, "invalid dither mode '%s', expected auto, fs, ordered or none", optarg); 
+                    return ARGS_ERROR; 
+                }
+                args->options.dither = index; 
                 break; 
 
             case 'l':
@@ -187,6 +221,10 @@ int parse_arg(int argc, char** argv, ARGS_t* args)
     // Everything after the options are filenames. 
     args->files = argv + optind; 
     args->file_count = argc - optind; 
+
+    // The color mode is detected from the environment when not given. 
+    if (args->options.colors == COLORS_AUTO)
+        args->options.colors = detect_color_mode(); 
 
     if (args->file_count < 1)
     {

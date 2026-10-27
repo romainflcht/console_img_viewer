@@ -10,6 +10,11 @@
 // __ DEFINIFIONS ______________________________________________________________
 #define PIXEL_CHAR "▄"
 
+// Blocks used in mono (no color): top pixel, bottom pixel, both. 
+#define MONO_TOP_CHAR    "▀"
+#define MONO_BOTTOM_CHAR "▄"
+#define MONO_FULL_CHAR   "█"
+
 
 // __ TYPES DEFINITIONS ________________________________________________________
 typedef struct 

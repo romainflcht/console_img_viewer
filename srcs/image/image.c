@@ -168,6 +168,8 @@ static int add_frame(unsigned char* rgb, size_t width, size_t height, size_t cha
     size_t          line; 
     size_t          target_width; 
     size_t          target_height; 
+    DITHER_MODE_t   dither; 
+    int*            codes; 
 
     img = user; 
 
@@ -198,8 +200,24 @@ static int add_frame(unsigned char* rgb, size_t width, size_t height, size_t cha
     frame = img->img + img->frame_count * cell_count; 
     memset(frame, 0, sizeof(PIXEL_t) * cell_count); 
 
+    // Convert the colors to the color mode. Animations use ordered 
+    // dithering by default: Floyd-Steinberg changes the pixels between 
+    // frames and makes them flicker. 
+    dither = img->options->dither; 
+    if (dither == DITHER_AUTO)
+        dither = delay_ms ? DITHER_ORDERED : DITHER_FS; 
+
+    codes = map_colors(rgb, img->width, img->height, img->options->colors, dither); 
+    if (!codes)
+    {
+        free(resized); 
+        return 1; 
+    }
+
     for (line = 0; line < img->height; line++)
-        load_pixelscan(img, frame, rgb + line * img->width * 3, line + 1); 
+        load_pixelscan(img, frame, codes + line * img->width, line + 1); 
+
+    free(codes); 
 
     img->delays[img->frame_count] = delay_ms; 
     img->frame_count++; 
@@ -382,29 +400,17 @@ unsigned char* resize_rgb(unsigned char* src, size_t src_width, size_t src_heigh
 }
 
 
-// * Load a pixel row scan into the correct pixel row of a frame. 
+// * Load a row of color codes into the correct pixel row of a frame. 
 // * param: img: the img where the pixel row need to be inserted. 
 // * param: frame: the pixel matrix of the frame. 
-// * param: pixel_row_t: the RGB pixel row that need to be inserted
-// *                     (unsigned char ptr). 
+// * param: codes: the color codes of the row (see map_colors()). 
 // * param: line: the row where the pixel row need to be inserted. 
-void load_pixelscan(IMG_t* img, PIXEL_t* frame, pixel_row_t* pixel_scanline, unsigned int line)
+void load_pixelscan(IMG_t* img, PIXEL_t* frame, const int* codes, unsigned int line)
 {
-    size_t              i; 
-    int                 hex; 
-    unsigned short int  r; 
-    unsigned short int  g; 
-    unsigned short int  b; 
+    size_t i; 
 
     for (i = 0; i < img->width; i++)
-    {
-        r = pixel_scanline[i * 3 + 0];
-        g = pixel_scanline[i * 3 + 1];
-        b = pixel_scanline[i * 3 + 2];
-
-        rgb_to_hex(r, g, b, &hex); 
-        change_pixel_color((frame + i + (line - 1) / 2 * img->width), hex, (line - 1) % 2); 
-    }
+        change_pixel_color((frame + i + (line - 1) / 2 * img->width), codes[i], (line - 1) % 2); 
 
     return; 
 }
@@ -417,30 +423,35 @@ void load_pixelscan(IMG_t* img, PIXEL_t* frame, pixel_row_t* pixel_scanline, uns
 int draw_image(IMG_t *img)
 {
     TERMINAL_t  term; 
-    size_t      rows; 
-    size_t      offset; 
+    RENDER_t    render; 
     int         interrupted; 
 
-    rows = (img->height + 1) / 2; 
+    render.width = img->width; 
+    render.rows = (img->height + 1) / 2; 
+    render.colors = img->options->colors; 
     interrupted = 0; 
 
     // Center the image when asked and when the terminal width is known. 
-    offset = 0; 
+    render.offset = 0; 
     if (img->options->center && !get_display_terminal(img->options, &term) && term.cols > img->width)
-        offset = (term.cols - img->width) / 2; 
+        render.offset = (term.cols - img->width) / 2; 
 
     // Animations are played in place by moving the cursor up, it is only 
     // possible on a terminal and when the whole image is visible. Otherwise 
     // only the first frame is written. 
     if (img->frame_count > 1 && isatty(STDOUT_FILENO) 
-        && (get_display_terminal(img->options, &term) || rows < term.rows))
-        interrupted = play_animation(img->img, img->delays, img->frame_count, img->width, rows, offset, img->options->loop); 
+        && (get_display_terminal(img->options, &term) || render.rows < term.rows))
+        interrupted = play_animation(img->img, img->delays, img->frame_count, &render, img->options->loop); 
 
-    else if (draw_pixels(img->img, NULL, img->width, rows, offset))
+    else if (draw_pixels(img->img, NULL, &render))
         return 0; 
 
-    // finish the print with some information. 
-    printf("\x1b[1mIMG SIZE : %ldx%ld", img->src_width, img->src_height); 
+    // finish the print with some information (in bold, except without 
+    // colors where no escape sequence is written). 
+    if (img->options->colors != COLORS_MONO)
+        printf(ESC_BOLD); 
+
+    printf("IMG SIZE : %ldx%ld", img->src_width, img->src_height); 
 
     if (img->width != img->src_width || img->height != img->src_height)
         printf(" (resized to %ldx%ld)", img->width, img->height); 
@@ -450,6 +461,10 @@ int draw_image(IMG_t *img)
     if (img->frame_count > 1)
         printf(" and %ld frames", img->frame_count); 
 
-    printf(".\x1b[0m\n\n"); 
+    printf("."); 
+    if (img->options->colors != COLORS_MONO)
+        printf(ESC_RESET); 
+
+    printf("\n\n"); 
     return interrupted; 
 }

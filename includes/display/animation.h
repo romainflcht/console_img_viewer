@@ -16,14 +16,12 @@
 // __ FUNCTIONS ________________________________________________________________
 // * Play an animation in place in the terminal. Late frames are skipped to
 // * keep the right speed. Ctrl-C stops the animation.
-// * param: frames: frame_count pixel matrices of width * rows cells.
+// * param: frames: frame_count pixel matrices of render->width * rows cells. 
 // * param: delays: display time of each frame in milliseconds.
 // * param: frame_count: number of frames.
-// * param: width: number of cells per row.
-// * param: rows: number of rows of cells.
-// * param: offset: number of empty columns before the image (centering). 
+// * param: render: size, position and color mode of the frames. 
 // * param: loop: 1 to play the animation until Ctrl-C, 0 to play it once. 
 // * return: 1 if the animation was stopped with Ctrl-C and 0 otherwise. 
-int play_animation(PIXEL_t* frames, int* delays, size_t frame_count, size_t width, size_t rows, size_t offset, int loop); 
+int play_animation(PIXEL_t* frames, int* delays, size_t frame_count, const RENDER_t* render, int loop); 
 
 #endif

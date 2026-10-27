@@ -40,11 +40,25 @@ After that, you can run the script by using the command:
 | `-u`, `--upscale` | Enlarge small images up to the maximum size (they are only shrunk by default). |
 | `--fit=MODE` | Terminal dimensions limiting the image: `both` (default), `width`, `height` or `none`. |
 | `-C`, `--center` | Center the image horizontally. |
+| `-c`, `--colors=MODE` | `truecolor`, `256`, `16`, `8` or `mono` (no color, only blocks). `auto` (default) uses `NO_COLOR`, `TERM` and `COLORTERM`. |
+| `--dither=MODE` | How colors are approximated: `auto` (default: `fs` for images, `ordered` for animations), `fs` (Floyd-Steinberg), `ordered` or `none`. |
 | `-l`, `--loop` |Loop animations until `Ctrl-C` (they are played once by default). |
 | `-h`, `--help` | Show the help. |
 | `-V`, `--version` | Show the version. |
 
 The terminal size is asked to the kernel, then read from `$COLUMNS` and `$LINES`, then asked to the terminal itself with an escape sequence. Serial consoles often report a `0x0` size to the kernel but most terminal emulators (picocom, minicom, screen...) answer the escape sequence. Use `-s` when nothing works.
+
+## Colors and slow links
+Each color change costs bytes, which matters on a serial link (115200 bauds is about 11KB/s). By default the color mode is detected from the environment:
+
+| Environment | Colors |
+|---|---|
+| `NO_COLOR` set or `TERM=dumb` | `mono`: no escape sequence at all, only `▀ ▄ █` |
+| `COLORTERM=truecolor` or `24bit` | `truecolor` |
+| `TERM` containing `256color` | `256` |
+| anything else (`vt220`, `linux`...) | `16` |
+
+An 80x40 photo takes about 49KB in truecolor, 15KB in 16 colors and 4KB in mono. Dithering keeps the image readable with few colors; animations use an ordered dithering which stays stable between frames (Floyd-Steinberg would change most cells at each frame). `--dither=none` gives the smallest output.
 
 `FILE` can be `-` to readthe image from the standard input, for example `ssh board cat /tmp/capture.png | tv -`. Pipes and devices can be read too.
 
