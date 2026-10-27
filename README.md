@@ -1,5 +1,5 @@
 # console_img_viewer
-Command line tool utility that allow you to display JPEG and PNG images directly into the console. Images that are bigger than the terminal are automatically resized to fit inside it. 
+Command line tool utility that allow you to display JPEG and PNG images directly into the console. Images that are bigger than the terminal are automatically resized to fit inside it, and JPEG photos are rotated following their EXIF orientation. 
 
 
 <p align="center">
@@ -41,9 +41,9 @@ sudo make install
 ```
 srcs/               sources, main.c is at the root
 ├── cli/            command-line arguments parsing
-├── decoders/       one decoder per image format (JPEG, PNG...)
+├── decoders/       one decoder per image format (JPEG, PNG...) and EXIF parsing
 ├── display/        terminal size and pixel drawing
-├── image/          image creation, resizing and drawing
+├── image/          image creation, resizing, rotation and drawing
 └── utils/          color conversion helpers
 includes/           headers, same layout as srcs/
 bin/                compiled executable (tv)
