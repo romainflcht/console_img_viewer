@@ -2,24 +2,33 @@
 
 
 // * Compute the size of the image once fitted inside the terminal while
-// * keeping its aspect ratio. Images are only shrunk, never enlarged.
+// * keeping its aspect ratio. Images are only shrunk, never enlarged, but 
+// * their height is corrected when the font cells are not twice as high as 
+// * wide so the image is not stretched. 
 // * param: width: the image width, replaced by the fitted width.
 // * param: height: the image height, replaced by the fitted height.
 static void fit_to_terminal(size_t* width, size_t* height)
 {
-    size_t cols;
-    size_t rows;
+    TERMINAL_t term; 
     size_t max_width;
     size_t max_height;
     size_t new_width;
     size_t new_height;
 
-    if (get_terminal_size(&cols, &rows))
+    if (get_terminal_size(&term))
         return; 
 
-    // Each character cell holds 2 pixels vertically (▄).
-    max_width = cols;
-    max_height = rows > RESERVED_ROWS ? (rows - RESERVED_ROWS) * 2 : 2;
+    // Each character cell holds 2 pixels vertically (▄), so a pixel is 
+    // cell_width wide and cell_height / 2 high. When the font size is known, 
+    // scale the height so the pixels displayed have the right proportions. 
+    if (term.cell_width && term.cell_height)
+    {
+        new_height = (*height * 2 * term.cell_width + term.cell_height / 2) / term.cell_height; 
+        *height = new_height ? new_height : 1; 
+    }
+
+    max_width = term.cols;
+    max_height = term.rows > RESERVED_ROWS ? (term.rows - RESERVED_ROWS) * 2 : 2;
 
     if (*width <= max_width && *height <= max_height)
         return; 
