@@ -6,6 +6,7 @@
 #include <string.h>
 #include <gif_lib.h>
 #include "decoders/frame.h"
+#include "utils/utils.h"
 
 
 // __ DEFINIFIONS ______________________________________________________________

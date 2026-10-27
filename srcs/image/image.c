@@ -235,7 +235,7 @@ IMG_FORMAT_t get_img_format(char* filename)
     file = fopen(filename, "rb");
     if (!file)
     {
-        printf("File \"%s\" not found, please check your path.\n", filename);
+        print_error(filename, "%s", strerror(errno));
         return FORMAT_UNKNOWN;
     }
 
@@ -254,7 +254,7 @@ IMG_FORMAT_t get_img_format(char* filename)
     if (is_webp(header, len))
         return FORMAT_WEBP;
 
-    printf("File \"%s\" is not a supported image (JPEG, PNG, GIF or WebP).\n", filename);
+    print_error(filename, "not a supported image (JPEG, PNG, GIF or WebP)");
     return FORMAT_UNKNOWN;
 }
 

@@ -93,13 +93,13 @@ int decode_webp(char* filename, FRAME_CALLBACK_t callback, void* user)
     data = read_file(filename, &len); 
     if (!data)
     {
-        printf("Unable to read WebP \"%s\".\n", filename); 
+        print_error(filename, "unable to read WebP");
         return 1; 
     }
 
     if (WebPGetFeatures(data, len, &features) != VP8_STATUS_OK)
     {
-        printf("Unable to decode WebP \"%s\": invalid header.\n", filename); 
+        print_error(filename, "unable to decode WebP: invalid header");
         free(data); 
         return 1; 
     }
@@ -120,7 +120,7 @@ int decode_webp(char* filename, FRAME_CALLBACK_t callback, void* user)
 
     if (!decoder || !WebPAnimDecoderGetInfo(decoder, &info))
     {
-        printf("Unable to decode WebP \"%s\".\n", filename); 
+        print_error(filename, "unable to decode WebP");
         WebPAnimDecoderDelete(decoder); 
         free(data); 
         return 1; 
@@ -141,7 +141,7 @@ int decode_webp(char* filename, FRAME_CALLBACK_t callback, void* user)
         // A corrupted frame stops the animation, the frames before are kept. 
         if (!WebPAnimDecoderGetNext(decoder, &rgba, &timestamp))
         {
-            printf("Unable to decode a frame of WebP \"%s\".\n", filename); 
+            print_error(filename, "unable to decode a frame of WebP");
             break; 
         }
 

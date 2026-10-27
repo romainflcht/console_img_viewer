@@ -101,14 +101,14 @@ int decode_gif(char* filename, FRAME_CALLBACK_t callback, void* user)
     gif = DGifOpenFileName(filename, &error);
     if (!gif)
     {
-        printf("Unable to read GIF \"%s\": %s\n", filename, gif_error(error));
+        print_error(filename, "unable to read GIF: %s", gif_error(error));
         return 1;
     }
 
     // A truncated GIF still keeps the frames decoded before the error.
     if (DGifSlurp(gif) != GIF_OK && gif->ImageCount == 0)
     {
-        printf("Unable to decode GIF \"%s\": %s\n", filename, gif_error(gif->Error));
+        print_error(filename, "unable to decode GIF: %s", gif_error(gif->Error));
         DGifCloseFile(gif, &error);
         return 1;
     }

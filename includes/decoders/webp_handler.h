@@ -7,6 +7,7 @@
 #include <webp/decode.h>
 #include <webp/demux.h>
 #include "decoders/frame.h"
+#include "utils/utils.h"
 
 
 // __ DEFINIFIONS ______________________________________________________________

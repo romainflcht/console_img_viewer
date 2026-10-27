@@ -3,10 +3,13 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <errno.h>
 #include <setjmp.h>
 #include <jpeglib.h>
 #include "decoders/exif.h"
 #include "image/transform.h"
+#include "utils/utils.h"
 
 
 // __ DEFINIFIONS ______________________________________________________________

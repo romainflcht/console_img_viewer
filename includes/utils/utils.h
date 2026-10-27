@@ -2,10 +2,14 @@
 #define _UTILS_H
 
 
+#include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 
 #define _DEBUG(str)    printf(str)
+
+#define PROGRAM_NAME    "tv"
 
 
 // __ FUNCTIONS ________________________________________________________________
@@ -22,5 +26,11 @@ void hex_to_rgb(int hex, int* r, int* g, int* b);
 // * param: b: the blue value [0-255]. 
 // * param: hex: where the converted hex color will be stored. 
 void rgb_to_hex(int r, int g, int b, int* hex); 
+
+// * Print an error message on stderr, prefixed with the program name and the 
+// * file concerned: "tv: file: message". 
+// * param: filename: the file concerned or NULL. 
+// * param: format: printf like format of the message. 
+void print_error(const char* filename, const char* format, ...); 
 
 #endif
