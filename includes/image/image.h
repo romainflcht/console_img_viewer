@@ -7,6 +7,7 @@
 #include "decoders/jpeg_handler.h"
 #include "decoders/png_handler.h"
 #include "decoders/gif_handler.h"
+#include "decoders/webp_handler.h"
 #include "display/terminal.h"
 #include "display/pixel.h"
 #include "display/renderer.h"
@@ -14,6 +15,9 @@
 #include "utils/utils.h"
 
 // __ DEFINIFIONS ______________________________________________________________
+// Number of bytes read to detect the image format (longest signature). 
+#define IMG_SIGNATURE_LEN WEBP_SIGNATURE_LEN
+
 #define BLACK 0x000000; 
 
 // Terminal rows kept free under the image (info line, blank line, prompt).
@@ -28,7 +32,8 @@ typedef enum
     FORMAT_UNKNOWN,
     FORMAT_JPEG,
     FORMAT_PNG,
-    FORMAT_GIF
+    FORMAT_GIF,
+    FORMAT_WEBP
 } IMG_FORMAT_t;
 
 typedef struct
@@ -46,8 +51,8 @@ typedef struct
 
 
 // __ FUNCTIONS ________________________________________________________________
-// * Create an IMG_t struct from a JPEG, PNG or GIF file, resized to fit inside 
-// * the current terminal. Animated images keep all their frames.
+// * Create an IMG_t struct from a JPEG, PNG, GIF or WebP file, resized to 
+// * fit inside the current terminal. Animated images keep all their frames.
 // * param: filename: path to the image.
 // * return: the pointer to the IMG_t struct of NULL in case of errors. 
 IMG_t* create_img(char* filename); 
