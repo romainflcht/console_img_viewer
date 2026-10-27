@@ -21,7 +21,7 @@ int main(int argc, char** argv)
 
     retval = parse_arg(argc, argv, &args);
     if (retval != ARGS_OK)
-        return retval == ARGS_HELP ? EXIT_OK : EXIT_FILE_ERROR;
+        return retval == ARGS_EXIT ? EXIT_OK : EXIT_FILE_ERROR;
 
     exit_code = EXIT_OK; 
     for (int i = 0; i < args.file_count; i++)
