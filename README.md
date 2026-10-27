@@ -39,6 +39,7 @@ After that, you can run the script by using the command:
 | `-H`, `--height=ROWS` | Maximum height of the image in rows. |
 | `-u`, `--upscale` | Enlarge small images up to the maximum size (they are only shrunk by default). |
 | `--fit=MODE` | Terminal dimensions limiting the image: `both` (default), `width`, `height` or `none`. |
+| `-C`, `--center` | Center the image horizontally. |
 | `-l`, `--loop` |Loop animations until `Ctrl-C` (they are played once by default). |
 | `-h`, `--help` | Show the help. |
 | `-V`, `--version` | Show the version. |

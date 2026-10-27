@@ -24,6 +24,7 @@ typedef struct
     size_t  max_rows; 
     int     upscale;        // enlarge small images up to the maximum size. 
     FIT_MODE_t fit; 
+    int     center;         // center the image horizontally. 
 } OPTIONS_t;
 
 #endif

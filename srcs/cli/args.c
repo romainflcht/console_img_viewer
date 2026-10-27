@@ -18,6 +18,7 @@ static void print_usage(FILE* stream)
         "  -u, --upscale         enlarge small images up to the maximum size\n"
         "      --fit=MODE        terminal dimensions limiting the image: both\n"
         "                        (default), width, height or none\n"
+        "  -C, --center          center the image horizontally\n"
         "\n"
         "Animation:\n"
         "  -l, --loop            loop animations until Ctrl-C (played once by default)\n"
@@ -111,6 +112,7 @@ int parse_arg(int argc, char** argv, ARGS_t* args)
         {"height",  required_argument, NULL, 'H'}, 
         {"upscale", no_argument,       NULL, 'u'}, 
         {"fit",     required_argument, NULL, OPT_FIT}, 
+        {"center",  no_argument,       NULL, 'C'}, 
         {"loop",    no_argument,       NULL, 'l'}, 
         {"help",    no_argument,       NULL, 'h'}, 
         {"version", no_argument,       NULL, 'V'}, 
@@ -120,7 +122,7 @@ int parse_arg(int argc, char** argv, ARGS_t* args)
 
     memset(&args->options, 0, sizeof(OPTIONS_t)); 
 
-    while ((opt = getopt_long(argc, argv, "s:w:H:ulhV", long_options, NULL)) != -1)
+    while ((opt = getopt_long(argc, argv, "s:w:H:uClhV", long_options, NULL)) != -1)
     {
         switch (opt)
         {
@@ -160,8 +162,12 @@ int parse_arg(int argc, char** argv, ARGS_t* args)
                 }
                 break; 
 
+            case 'C':
+                args->options.center = 1; 
+                break; 
+
             case 'l':
-                args->options.loop = 1; 
+                args->options.loop = 1;
                 break; 
 
             case 'h':

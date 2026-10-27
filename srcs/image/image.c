@@ -418,19 +418,25 @@ int draw_image(IMG_t *img)
 {
     TERMINAL_t  term; 
     size_t      rows; 
+    size_t      offset; 
     int         interrupted; 
 
     rows = (img->height + 1) / 2; 
     interrupted = 0; 
+
+    // Center the image when asked and when the terminal width is known. 
+    offset = 0; 
+    if (img->options->center && !get_display_terminal(img->options, &term) && term.cols > img->width)
+        offset = (term.cols - img->width) / 2; 
 
     // Animations are played in place by moving the cursor up, it is only 
     // possible on a terminal and when the whole image is visible. Otherwise 
     // only the first frame is written. 
     if (img->frame_count > 1 && isatty(STDOUT_FILENO) 
         && (get_display_terminal(img->options, &term) || rows < term.rows))
-        interrupted = play_animation(img->img, img->delays, img->frame_count, img->width, rows, img->options->loop); 
+        interrupted = play_animation(img->img, img->delays, img->frame_count, img->width, rows, offset, img->options->loop); 
 
-    else if (draw_pixels(img->img, NULL, img->width, rows))
+    else if (draw_pixels(img->img, NULL, img->width, rows, offset))
         return 0; 
 
     // finish the print with some information. 
