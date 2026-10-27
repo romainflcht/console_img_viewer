@@ -145,8 +145,8 @@ static int add_frame(unsigned char* rgb, size_t width, size_t height, size_t cha
 }
 
 
-// * Create an IMG_t struct from a JPEG, PNG or GIF file, resized to fit inside 
-// * the current terminal. Animated images keep all their frames. 
+// * Create an IMG_t struct from a JPEG, PNG, GIF or WebP file, resized to 
+// * fit inside the current terminal. Animated images keep all their frames. 
 // * param: filename: path to the image.
 // * return: the pointer to the IMG_t struct of NULL in case of errors. 
 IMG_t* create_img(char* filename)
@@ -178,6 +178,10 @@ IMG_t* create_img(char* filename)
 
         case FORMAT_GIF:
             retval = decode_gif(filename, add_frame, new_img); 
+            break; 
+
+        case FORMAT_WEBP:
+            retval = decode_webp(filename, add_frame, new_img); 
             break; 
 
         default:
@@ -225,7 +229,7 @@ void free_img(IMG_t* img)
 IMG_FORMAT_t get_img_format(char* filename)
 {
     FILE*           file;
-    unsigned char   header[PNG_SIGNATURE_LEN];
+    unsigned char   header[IMG_SIGNATURE_LEN];
     size_t          len;
 
     file = fopen(filename, "rb");
@@ -247,7 +251,10 @@ IMG_FORMAT_t get_img_format(char* filename)
     if (is_gif(header, len))
         return FORMAT_GIF;
 
-    printf("File \"%s\" is not a supported image (JPEG, PNG or GIF).\n", filename);
+    if (is_webp(header, len))
+        return FORMAT_WEBP;
+
+    printf("File \"%s\" is not a supported image (JPEG, PNG, GIF or WebP).\n", filename);
     return FORMAT_UNKNOWN;
 }
 

@@ -8,7 +8,7 @@ static void print_usage(FILE* stream)
     fprintf(
         stream, 
         "Usage: tv [-l] [-h] file1 [file2 ...]\n"
-        "Display JPEG, PNG and GIF images in the terminal.\n\n"
+        "Display JPEG, PNG, GIF and WebP images in the terminal.\n\n"
         "  -l  loop animations until Ctrl-C (played once by default)\n"
         "  -h  show this help\n"
     ); 
