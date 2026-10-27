@@ -4,12 +4,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <getopt.h>
+#include "utils/utils.h"
+#include "version.h"
 
 
 // __ DEFINIFIONS ______________________________________________________________
 #define ARGS_OK     0
 #define ARGS_ERROR  1
-#define ARGS_HELP   2
+#define ARGS_EXIT   2
 
 
 // __ TYPES DEFINITIONS ________________________________________________________
@@ -26,8 +29,8 @@ typedef struct
 // * param: argc: arguments count.
 // * param: argv: arguments vector (array). 
 // * param: args: where the options and the filenames will be stored. 
-// * return: ARGS_OK, ARGS_ERROR if the arguments are invalid or ARGS_HELP if 
-// *         the help was asked. 
+// * return: ARGS_OK, ARGS_ERROR if the arguments are invalid or ARGS_EXIT if 
+// *         the program must exit successfully (help or version). 
 int parse_arg(int argc, char** argv, ARGS_t* args); 
 
 #endif

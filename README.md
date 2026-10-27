@@ -29,13 +29,14 @@ make
 ```
 After that, you can run the script by using the command:
 ```bash
-./bin/tv [-l] <path_to_your_image> [other_images ...]
+./bin/tv [OPTION]... FILE...
 ```
 
 | Option | Description |
 |---|---|
-| `-l` | Loop animations until `Ctrl-C` (they are played once by default). |
-| `-h` | Show the help. |
+| `-l`, `--loop` | Loop animations until `Ctrl-C` (they are played once by default). |
+| `-h`, `--help` | Show the help. |
+| `-V`, `--version` | Show the version. |
 
 `Ctrl-C` during an animation stops the program. When the output is redirected to a file, only the first frame of an animation is written.
 
