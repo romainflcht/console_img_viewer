@@ -147,48 +147,58 @@ static int add_frame(unsigned char* rgb, size_t width, size_t height, size_t cha
 
 // * Create an IMG_t struct from a JPEG, PNG, GIF or WebP file, resized to 
 // * fit inside the current terminal. Animated images keep all their frames. 
-// * param: filename: path to the image.
+// * param: filename: path to the image, or "-" for the standard input. 
 // * return: the pointer to the IMG_t struct of NULL in case of errors. 
 IMG_t* create_img(char* filename)
 {
     IMG_t*          new_img; 
-    unsigned char*  rgb;
-    size_t          width; 
-    size_t          height; 
-    size_t          channel_count; 
+    DECODER_t       decoder; 
+    unsigned char*  data; 
+    size_t          len; 
     int             retval; 
+
+    data = read_file(filename, &len); 
+    if (!data)
+        return NULL; 
 
     new_img = calloc(1, sizeof(IMG_t)); 
     if (!new_img)
+    {
+        free(data); 
         return NULL; 
+    }
 
-    switch (get_img_format(filename))
+    decoder.name = strcmp(filename, STDIN_FILENAME) ? filename : STDIN_NAME; 
+    decoder.data = data; 
+    decoder.len = len; 
+    decoder.on_frame = add_frame; 
+    decoder.user = new_img; 
+
+    switch (get_img_format(data, len))
     {
         case FORMAT_JPEG:
-            rgb = decode_jpeg(filename, &width, &height, &channel_count);
-            retval = !rgb || add_frame(rgb, width, height, channel_count, 0, new_img); 
-            free(rgb); 
+            retval = decode_jpeg(&decoder); 
             break;
 
         case FORMAT_PNG:
-            rgb = decode_png(filename, &width, &height, &channel_count);
-            retval = !rgb || add_frame(rgb, width, height, channel_count, 0, new_img); 
-            free(rgb); 
+            retval = decode_png(&decoder); 
             break;
 
         case FORMAT_GIF:
-            retval = decode_gif(filename, add_frame, new_img); 
+            retval = decode_gif(&decoder); 
             break; 
 
         case FORMAT_WEBP:
-            retval = decode_webp(filename, add_frame, new_img); 
+            retval = decode_webp(&decoder); 
             break; 
 
         default:
+            print_error(decoder.name, "not a supported image (JPEG, PNG, GIF or WebP)"); 
             retval = 1; 
             break; 
     }
 
+    free(data); 
     if (retval || !new_img->frame_count)
     {
         free_img(new_img); 
@@ -223,38 +233,24 @@ void free_img(IMG_t* img)
 }
 
 
-// * Detect the format of an image file by reading its signature.
-// * param: filename: path to the image.
-// * return: the format of the image or FORMAT_UNKNOWN.
-IMG_FORMAT_t get_img_format(char* filename)
+// * Detect the format of an image from its signature. 
+// * param: data: the content of the file. 
+// * param: len: the size of the data. 
+// * return: the format of the image or FORMAT_UNKNOWN. 
+IMG_FORMAT_t get_img_format(const unsigned char* data, size_t len)
 {
-    FILE*           file;
-    unsigned char   header[IMG_SIGNATURE_LEN];
-    size_t          len;
-
-    file = fopen(filename, "rb");
-    if (!file)
-    {
-        print_error(filename, "%s", strerror(errno));
-        return FORMAT_UNKNOWN;
-    }
-
-    len = fread(header, 1, sizeof(header), file);
-    fclose(file);
-
-    if (is_jpeg(header, len))
+    if (is_jpeg(data, len))
         return FORMAT_JPEG;
 
-    if (is_png(header, len))
+    if (is_png(data, len))
         return FORMAT_PNG;
 
-    if (is_gif(header, len))
+    if (is_gif(data, len))
         return FORMAT_GIF;
 
-    if (is_webp(header, len))
+    if (is_webp(data, len))
         return FORMAT_WEBP;
 
-    print_error(filename, "not a supported image (JPEG, PNG, GIF or WebP)");
     return FORMAT_UNKNOWN;
 }
 

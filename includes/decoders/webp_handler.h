@@ -6,7 +6,7 @@
 #include <string.h>
 #include <webp/decode.h>
 #include <webp/demux.h>
-#include "decoders/frame.h"
+#include "decoders/decoder.h"
 #include "utils/utils.h"
 
 
@@ -28,10 +28,8 @@ int is_webp(const unsigned char* header, size_t len);
 
 // * Decode every frame of a WebP image (still or animated) and give them to 
 // * the callback. Transparent pixels are blended with a black background. 
-// * param: filename: path to the WebP image. 
-// * param: callback: function called with each decoded frame. 
-// * param: user: pointer given to the callback. 
+// * param: decoder: the encoded image and the frame callback. 
 // * return: 0 if at least one frame was decoded and 1 otherwise. 
-int decode_webp(char* filename, FRAME_CALLBACK_t callback, void* user); 
+int decode_webp(DECODER_t* decoder); 
 
 #endif

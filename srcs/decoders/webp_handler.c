@@ -14,40 +14,6 @@ int is_webp(const unsigned char* header, size_t len)
 }
 
 
-// * Read a whole file in memory, libwebp only decodes from memory. 
-// * param: filename: path to the file. 
-// * param: len: where the size of the file will be stored. 
-// * return: the content of the file (that need to be freed) or NULL in case 
-// *         of errors. 
-static unsigned char* read_file(char* filename, size_t* len)
-{
-    FILE*           file; 
-    unsigned char*  data; 
-    long            size; 
-
-    file = fopen(filename, "rb"); 
-    if (!file)
-        return NULL; 
-
-    if (fseek(file, 0, SEEK_END) || (size = ftell(file)) <= 0 || fseek(file, 0, SEEK_SET))
-    {
-        fclose(file); 
-        return NULL; 
-    }
-
-    data = malloc(size); 
-    if (data && fread(data, 1, size, file) != (size_t)size)
-    {
-        free(data); 
-        data = NULL; 
-    }
-
-    fclose(file); 
-    *len = size; 
-    return data; 
-}
-
-
 // * Convert a RGBA buffer to RGB, blending transparent pixels with black. 
 // * param: rgba: the RGBA buffer. 
 // * param: rgb: the RGB buffer where the result is written. 
@@ -69,79 +35,65 @@ static void rgba_to_rgb(const unsigned char* rgba, unsigned char* rgb, size_t pi
 
 // * Decode every frame of a WebP image (still or animated) and give them to 
 // * the callback. Transparent pixels are blended with a black background. 
-// * param: filename: path to the WebP image. 
-// * param: callback: function called with each decoded frame. 
-// * param: user: pointer given to the callback. 
+// * param: decoder: the encoded image and the frame callback. 
 // * return: 0 if at least one frame was decoded and 1 otherwise. 
-int decode_webp(char* filename, FRAME_CALLBACK_t callback, void* user)
+int decode_webp(DECODER_t* decoder)
 {
-    WebPData                webp_data; 
-    WebPAnimDecoderOptions  options; 
-    WebPAnimDecoder*        decoder; 
+    WebPData                webp_data;
+    WebPAnimDecoderOptions  options;
+    WebPAnimDecoder*        anim_decoder;
     WebPAnimInfo            info; 
     WebPBitstreamFeatures   features; 
-    unsigned char*          data; 
-    unsigned char*          rgba; 
+    unsigned char*          rgba;
     unsigned char*          rgb; 
-    size_t                  len; 
-    size_t                  channel_count; 
+    size_t                  channel_count;
     int                     timestamp; 
     int                     previous_timestamp; 
     int                     delay_ms; 
     int                     retval; 
 
-    data = read_file(filename, &len); 
-    if (!data)
+    if (WebPGetFeatures(decoder->data, decoder->len, &features) != VP8_STATUS_OK)
     {
-        print_error(filename, "unable to read WebP");
-        return 1; 
-    }
-
-    if (WebPGetFeatures(data, len, &features) != VP8_STATUS_OK)
-    {
-        print_error(filename, "unable to decode WebP: invalid header");
-        free(data); 
-        return 1; 
+        print_error(decoder->name, "unable to decode WebP: invalid header");
+        return 1;
     }
 
     channel_count = features.has_alpha ? 4 : 3; 
 
     // The animation decoder also decodes still images (as a single frame) 
     // and composes the frames of animations for us. 
-    webp_data.bytes = data; 
-    webp_data.size = len; 
-    decoder = NULL; 
+    webp_data.bytes = decoder->data;
+    webp_data.size = decoder->len;
+    anim_decoder = NULL;
     if (WebPAnimDecoderOptionsInit(&options))
     {
         options.color_mode = MODE_RGBA; 
         options.use_threads = 0; 
-        decoder = WebPAnimDecoderNew(&webp_data, &options); 
+        anim_decoder = WebPAnimDecoderNew(&webp_data, &options); 
     }
 
-    if (!decoder || !WebPAnimDecoderGetInfo(decoder, &info))
+    if (!anim_decoder || !WebPAnimDecoderGetInfo(anim_decoder, &info))
     {
-        print_error(filename, "unable to decode WebP");
-        WebPAnimDecoderDelete(decoder); 
-        free(data); 
+        print_error(decoder->name, "unable to decode WebP");
+        WebPAnimDecoderDelete(anim_decoder); 
         return 1; 
     }
 
     rgb = malloc((size_t)info.canvas_width * info.canvas_height * 3); 
     if (!rgb)
     {
-        WebPAnimDecoderDelete(decoder); 
-        free(data); 
+        WebPAnimDecoderDelete(anim_decoder); 
         return 1; 
     }
 
     retval = 1; 
     previous_timestamp = 0; 
-    while (WebPAnimDecoderHasMoreFrames(decoder))
+    while (WebPAnimDecoderHasMoreFrames(anim_decoder))
     {
         // A corrupted frame stops the animation, the frames before are kept. 
-        if (!WebPAnimDecoderGetNext(decoder, &rgba, &timestamp))
+        if (!WebPAnimDecoderGetNext(anim_decoder, &rgba, &timestamp))
         {
-            print_error(filename, "unable to decode a frame of WebP");
+            print_error(decoder->name, "unable to decode a frame of WebP");
             break; 
         }
 
@@ -152,7 +104,7 @@ int decode_webp(char* filename, FRAME_CALLBACK_t callback, void* user)
             delay_ms = WEBP_DEFAULT_DELAY_MS; 
 
         rgba_to_rgb(rgba, rgb, (size_t)info.canvas_width * info.canvas_height); 
-        if (callback(rgb, info.canvas_width, info.canvas_height, channel_count, delay_ms, user))
+        if (decoder->on_frame(rgb, info.canvas_width, info.canvas_height, channel_count, delay_ms, decoder->user))
         {
             retval = 1; 
             break; 
@@ -162,7 +114,6 @@ int decode_webp(char* filename, FRAME_CALLBACK_t callback, void* user)
     }
 
     free(rgb); 
-    WebPAnimDecoderDelete(decoder); 
-    free(data); 
+    WebPAnimDecoderDelete(anim_decoder); 
     return retval; 
 }
