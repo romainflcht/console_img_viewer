@@ -33,7 +33,9 @@ static void jpeg_output_message(j_common_ptr cinfo)
 // * return: the newly created JPEG handler or NULL in case of errors.
 JPEG_HANDLER_t* create_jpeg_handler(DECODER_t* decoder)
 {
-    JPEG_HANDLER_t* new_handler;
+    // volatile: the pointer is used after longjmp() comes back to setjmp(), 
+    // an optimized build could keep it in a register that longjmp() restores. 
+    JPEG_HANDLER_t* volatile new_handler; 
 
     new_handler = malloc(sizeof(JPEG_HANDLER_t));
     if (!new_handler)
