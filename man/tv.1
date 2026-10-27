@@ -1,0 +1,158 @@
+.TH TV 1 "2026-10-27" "tv 1.28" "User Commands"
+.SH NAME
+tv \- display images in a text terminal
+.SH SYNOPSIS
+.B tv
+[\fIOPTION\fR]... \fIFILE\fR...
+.SH DESCRIPTION
+.B tv
+displays JPEG, PNG, GIF, WebP, BMP and netpbm (PBM, PGM, PPM) images in a
+text terminal, including terminals without graphics such as serial
+consoles. Images are drawn with half block characters (two pixels per
+character cell) or with ASCII characters, and resized to fit the terminal.
+Animated GIF and WebP images are played in place.
+.PP
+The format is detected from the content of the file, not from its
+extension. With \fIFILE\fR \fB\-\fR, the image is read from the standard
+input. Pipes and devices can be read too.
+.PP
+JPEG photos are rotated following their EXIF orientation. Transparent
+pixels are drawn over a black background.
+.SH OPTIONS
+.SS Size
+.TP
+\fB\-s\fR, \fB\-\-size\fR=\fICOLS\fBx\fIROWS\fR
+Terminal size, when it can't be detected (see \fBTERMINAL SIZE\fR).
+.TP
+\fB\-w\fR, \fB\-\-width\fR=\fICOLS\fR
+Maximum width of the image in columns.
+.TP
+\fB\-H\fR, \fB\-\-height\fR=\fIROWS\fR
+Maximum height of the image in rows.
+.TP
+\fB\-u\fR, \fB\-\-upscale\fR
+Enlarge small images up to the maximum size. Images are only shrunk by
+default.
+.TP
+\fB\-\-fit\fR=\fIMODE\fR
+Terminal dimensions limiting the size of the image: \fBboth\fR (default),
+\fBwidth\fR, \fBheight\fR or \fBnone\fR.
+.TP
+\fB\-C\fR, \fB\-\-center\fR
+Center the image horizontally.
+.SS Colors
+.TP
+\fB\-c\fR, \fB\-\-colors\fR=\fIMODE\fR
+\fBtruecolor\fR, \fB256\fR, \fB16\fR, \fB8\fR or \fBmono\fR. In mono no
+escape sequence is written at all, only blocks. \fBauto\fR (default)
+chooses from the environment (see \fBENVIRONMENT\fR).
+.TP
+\fB\-\-dither\fR=\fIMODE\fR
+How colors are approximated with few colors: \fBauto\fR (default:
+\fBfs\fR for still images, \fBordered\fR for animations), \fBfs\fR
+(Floyd-Steinberg), \fBordered\fR (stable between frames) or \fBnone\fR
+(smallest output).
+.SS Characters
+.TP
+\fB\-a\fR, \fB\-\-ascii\fR
+Draw with ASCII characters: one character per pixel, chosen by brightness
+in " .:\-=+*#%@" and colored with the pixel color, except in mono. Used
+automatically when the locale is not UTF-8.
+.TP
+\fB\-\-utf8\fR
+Draw with half blocks even if the locale is not UTF-8.
+.SS Animation
+.TP
+\fB\-l\fR, \fB\-\-loop\fR
+Play animations until Ctrl-C. They are played once by default.
+.TP
+\fB\-n\fR, \fB\-\-plays\fR=\fIN\fR
+Play animations \fIN\fR times.
+.TP
+\fB\-L\fR, \fB\-\-file\-loop\fR
+Play animations as many times as the file says: GIF NETSCAPE2.0 loop
+count (repeated after the first play, like browsers) or WebP loop count.
+.TP
+\fB\-f\fR, \fB\-\-fps\fR=\fIN\fR
+Draw at most \fIN\fR frames per second. Frames are skipped but the
+animation keeps its speed, useful on slow links.
+.TP
+\fB\-\-frame\fR=\fIN\fR
+Only display the frame \fIN\fR (from 1) of an animation.
+.SS Other
+.TP
+\fB\-q\fR, \fB\-\-quiet\fR
+Don't print the information line under images.
+.TP
+\fB\-t\fR, \fB\-\-title\fR
+Print the file name before each image (\fB==> \fIfile\fB <==\fR).
+.TP
+\fB\-i\fR, \fB\-\-info\fR
+Only print the format, size (after EXIF rotation), channels, frames, loop
+count and EXIF orientation of each image, one line per file.
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Show the help and exit.
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+Show the version and the formats built in, and exit.
+.SH TERMINAL SIZE
+The terminal size is searched in this order: the \fB\-s\fR option, the
+kernel (\fBTIOCGWINSZ\fR), the \fBCOLUMNS\fR and \fBLINES\fR environment
+variables, then the terminal itself: the cursor is moved to the bottom
+right corner and its position is asked. Serial consoles often report a
+0x0 size to the kernel, but most terminal emulators (picocom, minicom,
+screen...) answer this request. When the window size in pixels is known,
+the image height is corrected for the font proportions.
+.PP
+When the size is unknown (output redirected to a file), images keep their
+size unless \fB\-w\fR or \fB\-H\fR is given.
+.SH ENVIRONMENT
+.TP
+.B NO_COLOR
+When set and not empty, the default color mode is \fBmono\fR.
+.TP
+.B TERM
+\fBdumb\fR gives \fBmono\fR, a value containing \fB256color\fR gives
+\fB256\fR colors, any other terminal \fB16\fR colors.
+.TP
+.B COLORTERM
+\fBtruecolor\fR or \fB24bit\fR gives \fBtruecolor\fR.
+.TP
+.BR LC_ALL ", " LC_CTYPE ", " LANG
+When the locale is not UTF-8, images are drawn with ASCII characters.
+.TP
+.BR COLUMNS ", " LINES
+Terminal size when the kernel doesn't know it.
+.SH EXIT STATUS
+.TP
+.B 0
+Every file was displayed.
+.TP
+.B 1
+At least one file could not be displayed, or invalid arguments.
+.TP
+.B 130
+Stopped with Ctrl-C.
+.SH EXAMPLES
+.TP
+.B tv photo.jpg
+Display a photo, resized to fit the terminal.
+.TP
+.B tv \-c 16 \-f 5 \-l animation.gif
+Play an animation forever over a slow serial link.
+.TP
+.B ssh board cat /tmp/capture.png | tv \-
+Display an image of a remote board.
+.TP
+.B tv \-i *.jpg
+Print the size and orientation of photos without drawing them.
+.TP
+.B tv \-a \-c mono \-w 60 logo.png > logo.txt
+Write an ASCII art version of an image, without any escape sequence.
+.SH NOTES
+Errors are written on the standard error as \fBtv: \fIfile\fB: \fImessage\fR.
+.PP
+The JPEG, PNG, GIF and WebP decoders can be disabled at build time
+(\fBmake WITH_JPEG=0\fR...), BMP and netpbm are always built. \fBtv \-V\fR
+lists the formats built in.

@@ -1,0 +1,25 @@
+#compdef tv
+# zsh completion for tv(1)
+
+_arguments -s -S \
+    '(-s --size)'{-s+,--size=}'[terminal size, when it cannot be detected]:size (COLSxROWS):' \
+    '(-w --width)'{-w+,--width=}'[maximum width of the image in columns]:columns:' \
+    '(-H --height)'{-H+,--height=}'[maximum height of the image in rows]:rows:' \
+    '(-u --upscale)'{-u,--upscale}'[enlarge small images up to the maximum size]' \
+    '--fit=[terminal dimensions limiting the image]:mode:(both width height none)' \
+    '(-C --center)'{-C,--center}'[center the image horizontally]' \
+    '(-c --colors)'{-c+,--colors=}'[color mode]:mode:(auto truecolor 256 16 8 mono)' \
+    '--dither=[how colors are approximated]:mode:(auto fs ordered none)' \
+    '(-a --ascii --utf8)'{-a,--ascii}'[draw with ASCII characters]' \
+    '(-a --ascii)--utf8[draw with half blocks even if the locale is not UTF-8]' \
+    '(-l --loop -n --plays -L --file-loop)'{-l,--loop}'[play animations until Ctrl-C]' \
+    '(-l --loop -n --plays -L --file-loop)'{-n+,--plays=}'[play animations N times]:plays:' \
+    '(-l --loop -n --plays -L --file-loop)'{-L,--file-loop}'[play animations as many times as the file says]' \
+    '(-f --fps)'{-f+,--fps=}'[draw at most N frames per second]:frames per second:' \
+    '--frame=[only display this frame of an animation]:frame:' \
+    '(-q --quiet)'{-q,--quiet}'[do not print the information line under images]' \
+    '(-t --title)'{-t,--title}'[print the file name before each image]' \
+    '(-i --info)'{-i,--info}'[only print information about the images]' \
+    '(- *)'{-h,--help}'[show the help and exit]' \
+    '(- *)'{-V,--version}'[show the version and exit]' \
+    '*:image file:_files -g "*.(#i)(jpg|jpeg|png|gif|webp|bmp|pbm|pgm|ppm|pnm)(-.)"'

@@ -89,10 +89,11 @@ make WITH_JPEG=0 WITH_PNG=0 WITH_GIF=0 WITH_WEBP=0
 make CC=aarch64-linux-gnu-gcc CPPFLAGS=--sysroot=/path/to/sysroot LDFLAGS=--sysroot=/path/to/sysroot
 ```
 
-You can also install `tv` system wide (default prefix is `/usr/local`):
+You can also install `tv` system wide (default prefix is `/usr/local`), with its man page (`man tv`) and its bash and zsh completions:
 ```bash
 sudo make install
 ```
+`PREFIX` and `DESTDIR` can be changed for packaging (`make install DESTDIR=/tmp/pkg PREFIX=/usr`), `make uninstall` removes everything.
 
 # Project structure
 ```
@@ -103,6 +104,8 @@ srcs/               sources, main.c is at the root
 ├── image/          format detection, image creation, resizing, rotation and drawing
 └── utils/          color conversion, error and file reading helpers
 includes/           headers, same layout as srcs/
+man/                man page (tv.1)
+completions/        bash and zsh completions
 bin/                compiled executable (tv)
 ```
 
