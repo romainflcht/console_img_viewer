@@ -10,7 +10,11 @@
 // __ DEFINIFIONS ______________________________________________________________
 #define PIXEL_CHAR "▄"
 
-// Blocks used in mono (no color): top pixel, bottom pixel, both. 
+// Color of a missing pixel (bottom of the last row when the image height is 
+// odd): only the top pixel is drawn, over the terminal background. 
+#define COLOR_NONE -2
+
+// Blocks used in mono (no color): top pixel, bottom pixel, both.
 #define MONO_TOP_CHAR    "▀"
 #define MONO_BOTTOM_CHAR "▄"
 #define MONO_FULL_CHAR   "█"
