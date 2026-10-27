@@ -46,6 +46,10 @@ typedef struct
     size_t  channel_count; 
     int     size_known; 
     size_t  frame_count; 
+    size_t  decoded_frames;     // frames in the file (with --frame, only one 
+                                // of them is kept). 
+    int     loop_count;         // times the file asks to play the animation, 
+                                // 0 forever. 
     size_t  frame_capacity; 
     const OPTIONS_t*    options; 
     PIXEL_t *img;// frame_count pixel matrices, one after the other. 

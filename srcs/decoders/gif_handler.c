@@ -48,6 +48,46 @@ static int read_gif_data(GifFileType* gif, GifByteType* buffer, int len)
 }
 
 
+// * Read the loop count from the NETSCAPE2.0 application extension (before 
+// * the first frame). Like browsers, a loop count of N means the animation is 
+// * repeated N times after the first play. 
+// * param: gif: the GIF file, already slurped. 
+// * return: how many times the animation is played (0 forever) or -1 if 
+// *         there is no loop count. 
+static int get_gif_loop_count(GifFileType* gif)
+{
+    ExtensionBlock* blocks; 
+    int             count; 
+    int             i; 
+    int             loops; 
+
+    if (!gif->ImageCount)
+        return -1; 
+
+    blocks = gif->SavedImages[0].ExtensionBlocks; 
+    count = gif->SavedImages[0].ExtensionBlockCount; 
+
+    for (i = 0; i + 1 < count; i++)
+    {
+        if (blocks[i].Function != APPLICATION_EXT_FUNC_CODE 
+            || blocks[i].ByteCount != NETSCAPE_EXT_LEN 
+            || memcmp(blocks[i].Bytes, NETSCAPE_EXT, NETSCAPE_EXT_LEN))
+            continue; 
+
+        // The sub block is 1 followed by the loop count (little endian). 
+        if (blocks[i + 1].Function != CONTINUE_EXT_FUNC_CODE 
+            || blocks[i + 1].ByteCount < 3 
+            || blocks[i + 1].Bytes[0] != 1)
+            return -1; 
+
+        loops = blocks[i + 1].Bytes[1] | (blocks[i + 1].Bytes[2] << 8); 
+        return loops ? loops + 1 : 0; 
+    }
+
+    return -1; 
+}
+
+
 // * Fill a rectangle of the canvas with black.
 // * param: canvas: the RGB canvas.
 // * param: canvas_width: width of the canvas.
@@ -136,6 +176,8 @@ int decode_gif(DECODER_t* decoder)
         DGifCloseFile(gif, &error);
         return 1;
     }
+
+    decoder->loop_count = get_gif_loop_count(gif); 
 
     canvas_len = (size_t)gif->SWidth * gif->SHeight * 3;
     canvas = calloc(canvas_len, 1);

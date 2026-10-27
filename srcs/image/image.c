@@ -209,6 +209,11 @@ static int add_frame(unsigned char* rgb, size_t width, size_t height, size_t cha
     if (!img->size_known)
         set_size(width, height, channel_count, &target_width, &target_height, img); 
 
+    // With --frame, only the asked frame is kept. 
+    img->decoded_frames++; 
+    if (img->options->frame && img->decoded_frames != img->options->frame)
+        return 0; 
+
     // Resize the frame to its displayed size (JPEG may already be decoded at 
     // a smaller size). 
     resized = NULL; 
@@ -303,6 +308,7 @@ IMG_t* create_img(char* filename, const OPTIONS_t* options)
     decoder.on_size = set_size; 
     decoder.on_frame = add_frame; 
     decoder.user = new_img; 
+    decoder.loop_count = -1; 
 
     switch (get_img_format(data, len))
     {
@@ -328,11 +334,21 @@ IMG_t* create_img(char* filename, const OPTIONS_t* options)
             break; 
     }
 
-    free(data); 
+    free(data);
+
+    // Animations stored without loop count are played once. 
+    new_img->loop_count = decoder.loop_count < 0 ? 1 : decoder.loop_count; 
+
+    if (!retval && options->frame && options->frame > new_img->decoded_frames)
+    {
+        print_error(decoder.name, "no frame %zu, the image has %zu frame(s)", options->frame, new_img->decoded_frames); 
+        retval = 1; 
+    }
+
     if (retval || !new_img->frame_count)
     {
-        free_img(new_img); 
-        return NULL; 
+        free_img(new_img);
+        return NULL;
     }
 
     return new_img; 
@@ -471,6 +487,7 @@ int draw_image(IMG_t *img)
     TERMINAL_t  term; 
     RENDER_t    render; 
     int         interrupted; 
+    int         plays; 
 
     render.width = img->width; 
     render.rows = cell_rows(img); 
@@ -488,7 +505,10 @@ int draw_image(IMG_t *img)
     // only the first frame is written. 
     if (img->frame_count > 1 && isatty(STDOUT_FILENO) 
         && (get_display_terminal(img->options, &term) || render.rows < term.rows))
-        interrupted = play_animation(img->img, img->delays, img->frame_count, &render, img->options->loop); 
+    {
+        plays = img->options->plays == PLAYS_FROM_FILE ? img->loop_count : img->options->plays; 
+        interrupted = play_animation(img->img, img->delays, img->frame_count, &render, plays, img->options->max_fps); 
+    }
 
     else if (draw_pixels(img->img, NULL, &render))
         return 0; 
@@ -507,6 +527,9 @@ int draw_image(IMG_t *img)
 
     if (img->frame_count > 1)
         printf(" and %ld frames", img->frame_count); 
+
+    else if (img->options->frame)
+        printf(", frame %ld of %ld", img->options->frame, img->decoded_frames); 
 
     printf("."); 
     if (img->options->colors != COLORS_MONO)

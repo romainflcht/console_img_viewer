@@ -12,6 +12,10 @@
 // __ DEFINIFIONS ______________________________________________________________
 #define GIF_SIGNATURE_LEN 6
 
+// Application extension storing the loop count. 
+#define NETSCAPE_EXT        "NETSCAPE2.0"
+#define NETSCAPE_EXT_LEN    11
+
 // Browsers display frames with a delay under 20ms during 100ms, do the same.
 #define GIF_MIN_DELAY_MS     20
 #define GIF_DEFAULT_DELAY_MS 100
