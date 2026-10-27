@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <setjmp.h>
 #include <jpeglib.h>
 
 
@@ -11,10 +12,18 @@
 
 
 // __ TYPES DEFINITIONS ________________________________________________________
+// libjpeg calls exit() on fatal errors by default, this error manager jumps 
+// back to the decoder instead so the next files can still be displayed. 
+typedef struct {
+    struct jpeg_error_mgr         pub; 
+    jmp_buf                       jump_buffer; 
+    char                          message[JMSG_LENGTH_MAX]; 
+} JPEG_ERROR_t;
+
 typedef struct {
     FILE*                         file_jpeg; 
     struct jpeg_decompress_struct cinfo; 
-    struct jpeg_error_mgr         jpeg_err_handler; 
+    JPEG_ERROR_t                  jpeg_err_handler; 
 } JPEG_HANDLER_t;
 
 
