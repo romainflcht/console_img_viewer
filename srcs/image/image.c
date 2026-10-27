@@ -348,7 +348,11 @@ IMG_t* create_img(char* filename, const OPTIONS_t* options)
             break;
 
         case FORMAT_PNM:
-            retval = decode_pnm(&decoder); 
+            retval = decode_pnm(&decoder);
+            break;
+
+        case FORMAT_BMP:
+            retval = decode_bmp(&decoder); 
             break; 
 
         default:
@@ -387,7 +391,7 @@ IMG_t* create_img(char* filename, const OPTIONS_t* options)
 // * param: name: the name of the file. 
 void print_img_info(IMG_t* img, const char* name)
 {
-    static const char* format_names[] = {"unknown", "JPEG", "PNG", "GIF", "WebP", "PNM"}; 
+    static const char* format_names[] = {"unknown", "JPEG", "PNG", "GIF", "WebP", "PNM", "BMP"}; 
 
     printf("%s: %s %zux%zu, %zu channel%s", 
         name, 
@@ -459,7 +463,10 @@ IMG_FORMAT_t get_img_format(const unsigned char* data, size_t len)
         return FORMAT_WEBP;
 
     if (is_pnm(data, len))
-        return FORMAT_PNM; 
+        return FORMAT_PNM;
+
+    if (is_bmp(data, len))
+        return FORMAT_BMP; 
 
     return FORMAT_UNKNOWN;
 }

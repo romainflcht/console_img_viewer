@@ -10,6 +10,7 @@
 #include "decoders/gif_handler.h"
 #include "decoders/webp_handler.h"
 #include "decoders/pnm_handler.h"
+#include "decoders/bmp_handler.h"
 #include "display/terminal.h"
 #include "display/pixel.h"
 #include "display/renderer.h"
@@ -30,7 +31,7 @@
 
 
 // Formats listed in the error and help messages. 
-#define SUPPORTED_FORMATS "JPEG, PNG, GIF, WebP, PBM/PGM/PPM"
+#define SUPPORTED_FORMATS "JPEG, PNG, GIF, WebP, BMP, PBM/PGM/PPM"
 
 
 // __ TYPES DEFINITIONS ________________________________________________________
@@ -43,7 +44,8 @@ typedef enum
     FORMAT_PNG,
     FORMAT_GIF,
     FORMAT_WEBP,
-    FORMAT_PNM
+    FORMAT_PNM,
+    FORMAT_BMP
 } IMG_FORMAT_t;
 
 typedef struct
