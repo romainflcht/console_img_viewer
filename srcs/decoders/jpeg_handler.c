@@ -117,8 +117,47 @@ int get_jpeg_orientation(JPEG_HANDLER_t* handler)
 }
 
 
-// * Decode a JPEG image rotated following its EXIF orientation and give it
-// * to the decoder callback.
+// * Choose the smallest DCT scaling (M/8) that still gives at least the 
+// * displayed size, so big photos are decoded faster and with less memory. 
+// * param: handler: the JPEG handler, its header must already be read. 
+// * param: decoder: the decoder, its size callback gives the displayed size. 
+// * param: orientation: the EXIF orientation of the image. 
+static void set_jpeg_scale(JPEG_HANDLER_t* handler, DECODER_t* decoder, int orientation)
+{
+    size_t  width; 
+    size_t  height; 
+    size_t  target_width; 
+    size_t  target_height; 
+    size_t  scale_w; 
+    size_t  scale_h; 
+
+    width = handler->cinfo.image_width; 
+    height = handler->cinfo.image_height; 
+
+    // The displayed size is computed on the rotated image. 
+    if (orientation >= ORIENTATION_TRANSPOSE)
+        decoder->on_size(height, width, handler->cinfo.num_components, &target_height, &target_width, decoder->user); 
+
+    else
+        decoder->on_size(width, height, handler->cinfo.num_components, &target_width, &target_height, decoder->user); 
+
+    // M = ceil(8 * target / size), between 1 and 8. 
+    scale_w = (target_width * JPEG_SCALE_DENOM + width - 1) / width; 
+    scale_h = (target_height * JPEG_SCALE_DENOM + height - 1) / height; 
+    handler->cinfo.scale_num = scale_w > scale_h ? scale_w : scale_h; 
+    if (handler->cinfo.scale_num < 1)
+        handler->cinfo.scale_num = 1; 
+
+    if (handler->cinfo.scale_num > JPEG_SCALE_DENOM)
+        handler->cinfo.scale_num = JPEG_SCALE_DENOM; 
+
+    handler->cinfo.scale_denom = JPEG_SCALE_DENOM; 
+}
+
+
+// * Decode a JPEG image rotated following its EXIF orientation and give it 
+// * to the decoder callback. The image is decoded at the smallest size that 
+// * is still bigger than its displayed size.
 // * param: decoder: the encoded image and the frame callback.
 // * return: 0 if no error occured and 1 otherwise.
 int decode_jpeg(DECODER_t* decoder)
@@ -137,13 +176,26 @@ int decode_jpeg(DECODER_t* decoder)
     if (!handler)
         return 1;
 
-    width = handler->cinfo.image_width;
-    height = handler->cinfo.image_height;
     channel_count = handler->cinfo.num_components;
-    orientation = get_jpeg_orientation(handler);
+    orientation = get_jpeg_orientation(handler); 
 
     // Ask libjpeg to convert grayscale images to RGB.
     handler->cinfo.out_color_space = JCS_RGB;
+
+    // libjpeg jumps back here if the output size can't be computed. 
+    if (setjmp(handler->jpeg_err_handler.jump_buffer))
+    {
+        print_error(decoder->name, "unable to decode JPEG: %s", handler->jpeg_err_handler.message); 
+        free_jpeg_handler(handler);
+        return 1; 
+    }
+
+    if (decoder->on_size)
+        set_jpeg_scale(handler, decoder, orientation); 
+
+    jpeg_calc_output_dimensions(&(handler->cinfo)); 
+    width = handler->cinfo.output_width; 
+    height = handler->cinfo.output_height; 
 
     row_len = width * 3;
     buffer = malloc(sizeof(unsigned char) * row_len * height);

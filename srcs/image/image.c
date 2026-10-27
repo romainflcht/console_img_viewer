@@ -83,7 +83,33 @@ static int grow_frames(IMG_t* img)
 }
 
 
-// * Add a decoded frame to the image (FRAME_CALLBACK_t). The first frame sets 
+// * Set the size of the image and compute the size it will be displayed at 
+// * (SIZE_CALLBACK_t). 
+// * param: width: width of the image. 
+// * param: height: height of the image. 
+// * param: channel_count: channel count of the image. 
+// * param: target_width: where the displayed width will be stored. 
+// * param: target_height: where the displayed height will be stored. 
+// * param: user: the IMG_t struct. 
+static void set_size(size_t width, size_t height, size_t channel_count, size_t* target_width, size_t* target_height, void* user)
+{
+    IMG_t* img; 
+
+    img = user; 
+    img->src_width = width; 
+    img->src_height = height; 
+    img->channel_count = channel_count; 
+    img->width = width; 
+    img->height = height; 
+    fit_to_terminal(&img->width, &img->height); 
+    img->size_known = 1; 
+
+    *target_width = img->width; 
+    *target_height = img->height; 
+}
+
+
+// * Add a decoded frame to the image (FRAME_CALLBACK_t).The first frame sets 
 // * the image size, every frame is resized to fit inside the terminal. 
 // * param: rgb: the frame in RGB (3 bytes per pixel). 
 // * param: width: width of the frame. 
@@ -99,21 +125,17 @@ static int add_frame(unsigned char* rgb, size_t width, size_t height, size_t cha
     PIXEL_t*        frame; 
     size_t          cell_count; 
     size_t          line; 
+    size_t          target_width; 
+    size_t          target_height; 
 
     img = user; 
 
-    // The first frame gives the size of the image. 
-    if (!img->frame_count)
-    {
-        img->src_width = width; 
-        img->src_height = height; 
-        img->channel_count = channel_count; 
-        img->width = width; 
-        img->height = height; 
-        fit_to_terminal(&img->width, &img->height); 
-    }
+    // The first frame gives the size of the image if the decoder didn't. 
+    if (!img->size_known)
+        set_size(width, height, channel_count, &target_width, &target_height, img); 
 
-    // Shrink the frame if it doesn't fit inside the terminal. 
+    // Resize the frame to its displayed size (JPEG may already be decoded at 
+    // a smaller size). 
     resized = NULL; 
     if (img->width != width || img->height != height)
     {
@@ -171,6 +193,7 @@ IMG_t* create_img(char* filename)
     decoder.name = strcmp(filename, STDIN_FILENAME) ? filename : STDIN_NAME; 
     decoder.data = data; 
     decoder.len = len; 
+    decoder.on_size = set_size; 
     decoder.on_frame = add_frame; 
     decoder.user = new_img; 
 

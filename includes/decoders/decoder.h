@@ -17,13 +17,25 @@
 // * return: 0 to continue decoding and 1 to stop (error). 
 typedef int (*FRAME_CALLBACK_t)(unsigned char* rgb, size_t width, size_t height, size_t channel_count, int delay_ms, void* user); 
 
+// * Called by the decoders once the size of the image is known, before the 
+// * pixels are decoded. Decoders that can decode at a smaller size (JPEG) use 
+// * the answer to decode only what is needed. 
+// * param: width: width of the image. 
+// * param: height: height of the image. 
+// * param: channel_count: channel count of the image. 
+// * param: target_width: where the displayed width will be stored. 
+// * param: target_height: where the displayed height will be stored. 
+// * param: user: the user pointer of the decoder. 
+typedef void (*SIZE_CALLBACK_t)(size_t width, size_t height, size_t channel_count, size_t* target_width, size_t* target_height, void* user); 
+
 // What a decoder needs: the encoded image in memory and where to send the 
-// decoded frames. 
+// decoded frames.
 typedef struct
 {
     const char*             name;       // shown in error messages. 
     const unsigned char*    data; 
     size_t                  len; 
+    SIZE_CALLBACK_t         on_size; 
     FRAME_CALLBACK_t        on_frame; 
     void*                   user; 
 } DECODER_t;
